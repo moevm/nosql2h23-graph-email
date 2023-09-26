@@ -24,7 +24,7 @@ class Neo4jConnection:
         return response
 
 
-conn = Neo4jConnection(uri="bolt://localhost:7687", user="admin", password="admin1234")
+conn = Neo4jConnection(uri="bolt://localhost:7687", user="neo4j", password="admin12345")
 conn.query("CREATE OR REPLACE DATABASE graphDb")
 conn.query('CREATE (node:Node {name: "Hello world"})')
 # conn.query('MATCH (node:Node {name: "Hello world"}) DELETE node')
