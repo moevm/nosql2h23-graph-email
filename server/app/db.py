@@ -38,4 +38,3 @@ def close_db():
     db = g.pop('database', None)
     if db is not None:
         db.close()
-        
