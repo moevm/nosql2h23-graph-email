@@ -30,7 +30,9 @@ def get_db():
     db = getattr(g, "database", None)
     if db is None:
         uri = app.config.get('NEO4J_URI')
-        db = Neo4jConnection(uri, user="neo4j", password="admin12345")
+        user = app.config.get('NEO4J_USER')
+        password = app.config.get('NEO4J_PASSWORD')
+        db = Neo4jConnection(uri, user=user, password=password)
     return db
 
 
