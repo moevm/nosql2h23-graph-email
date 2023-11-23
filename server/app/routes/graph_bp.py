@@ -1,6 +1,8 @@
 from flask import Blueprint, jsonify, request, send_file, abort
 from ..db import get_db, close_db
 from werkzeug.local import LocalProxy
+import json
+from ..config import URI
 
 db = LocalProxy(get_db)
 
@@ -73,3 +75,20 @@ def get_graph():
 
     # Return as JSON
     return jsonify(graph_data)
+
+
+@graph_bp.route('/load_json', methods=['GET', 'POST'])
+def load_json():
+    try:
+        json_data = request.get_json()
+        print(json_data)
+        print(len(json_data))
+        print("-"*20)
+        for entry in json_data:
+            print(entry)
+
+        
+        return {"message": "JSON data successfully loaded into Neo4j database"}
+    except Exception as e:
+        # Handle exceptions (log, return error message, etc.)
+        return jsonify({"error": f"Failed to load JSON data. {str(e)}"}), 500
