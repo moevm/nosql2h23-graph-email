@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict, Union
 import datetime
 
 
@@ -9,13 +9,13 @@ class Edge:
         self.end: int = edge['end']
         self.type: str = edge['type']
         self.properties: Dict[str, str] = edge['properties']
-        self.date: Optional[datetime.date, str] = self.convert_to_isoformat(self.properties.get('date', None))
+        self.date: Union[datetime.date, str] = self.convert_to_isoformat(self.properties.get('date', None))
         self.element_id: str = edge['elementId']
         self.start_node_element_id: str = edge['startNodeElementId']
         self.end_node_element_id: str = edge['endNodeElementId']
 
     @staticmethod
-    def convert_to_isoformat(date_str: str) -> Optional[datetime.date, str]:
+    def convert_to_isoformat(date_str: str) -> Union[datetime.date, str]:
         try:
             # Assuming the input date string is in a known format
             date_obj = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ')

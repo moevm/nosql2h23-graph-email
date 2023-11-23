@@ -1,8 +1,7 @@
 from flask import Blueprint, jsonify, request, send_file, abort
 from ..db import get_db, close_db
 from werkzeug.local import LocalProxy
-import json
-from ..config import URI
+from ..dtos import PersonDto, EdgeDto, LetterDto
 
 db = LocalProxy(get_db)
 
@@ -47,7 +46,8 @@ def get_graph():
         node_labels = record['node_labels']
         target_labels = record['target_labels']
 
-        if "PERSON" in node_labels and (node_data.element_id not in nodes_ids or target_data.element_id not in nodes_ids):
+        if "PERSON" in node_labels and (
+                node_data.element_id not in nodes_ids or target_data.element_id not in nodes_ids):
             graph_data['nodes'].append({'id': node_data.element_id,
                                         'labels': node_labels,
                                         'name': node_data.get('name'),
@@ -55,7 +55,8 @@ def get_graph():
                                         })
             nodes_ids.update([node_data.element_id, target_data.element_id])
 
-        if "LETTER" in target_labels and (node_data.element_id not in nodes_ids or target_data.element_id not in nodes_ids):
+        if "LETTER" in target_labels and (
+                node_data.element_id not in nodes_ids or target_data.element_id not in nodes_ids):
             graph_data['nodes'].append({'id': target_data.element_id,
                                         'labels': target_labels,
                                         'from': target_data.get('from'),
@@ -81,13 +82,120 @@ def get_graph():
 def load_json():
     try:
         json_data = request.get_json()
-        print(json_data)
-        print(len(json_data))
-        print("-"*20)
+        # print(json_data)
+        # print(len(json_data))
+        # print("-" * 20)
+        id_to_node = {}
+        id_to_edge = {}
         for entry in json_data:
-            print(entry)
-
-        
+            # print(entry)
+            entry_node = entry['n']
+            rel = entry['r']
+            target = entry['m']
+            if 'PERSON' in entry_node['labels']:
+                person_node = PersonDto.Person(identity=entry_node['identity'],
+                                               elementId=entry_node['elementId'],
+                                               labels=entry_node['labels'],
+                                               properties=entry_node['properties'])
+                if entry_node['identity'] not in id_to_node.keys():
+                    id_to_node[entry_node['identity']] = person_node
+            elif 'LETTER' in entry_node['labels']:
+                letter_node = LetterDto.Letter(identity=entry_node['identity'],
+                                               elementId=entry_node['elementId'],
+                                               labels=entry_node['labels'],
+                                               properties=entry_node['properties'])
+                if entry_node['identity'] not in id_to_node.keys():
+                    id_to_node[entry_node['identity']] = letter_node
+            if 'PERSON' in target['labels']:
+                person_target = PersonDto.Person(identity=target['identity'],
+                                                 elementId=target['elementId'],
+                                                 labels=target['labels'],
+                                                 properties=target['properties'])
+                if target['identity'] not in id_to_node.keys():
+                    id_to_node[target['identity']] = person_target
+            elif 'LETTER' in target['labels']:
+                letter_target = LetterDto.Letter(identity=target['identity'],
+                                                 elementId=target['elementId'],
+                                                 labels=target['labels'],
+                                                 properties=target['properties'])
+                if target['identity'] not in id_to_node.keys():
+                    id_to_node[target['identity']] = letter_target
+            relationship = EdgeDto.Edge(rel)
+            id_to_edge[relationship.identity] = relationship
+        # print(id_to_node)
+        # print(len(id_to_node))
+        # print(id_to_edge)
+        # print(len(id_to_edge))
+        for node in id_to_node.values():
+            if isinstance(node, PersonDto.Person):
+                cypher = """
+                CREATE (n:{} {{ name : $name, email : $email }})
+                """.format(':'.join(node.labels))
+                db.query(query=cypher, name=node.name, email=node.email)
+            elif isinstance(node, LetterDto.Letter):
+                cypher = """
+                CREATE (n:{}
+                {{ subject : $subject,
+                 full_text : $full_text,
+                 id_chain : $id_chain,
+                 from : $_from,
+                 to : $to,
+                 order_in_chain : $order_in_chain,
+                 time_on_reply : $time_on_reply}})
+                """.format(':'.join(node.labels))
+                time_on_reply = node.time_on_reply if node.time_on_reply is not None else "null"
+                db.query(query=cypher,
+                         db=None,
+                         subject=node.subject,
+                         full_text=node.full_text,
+                         id_chain=node.id_chain,
+                         _from=node._from,
+                         to=node.to,
+                         order_in_chain=node.order_in_chain,
+                         time_on_reply=time_on_reply)
+        for relationship_obj in id_to_edge.values():
+            if isinstance(relationship_obj, EdgeDto.Edge):
+                start_node = id_to_node[relationship_obj.start]
+                end_node = id_to_node[relationship_obj.end]
+                if 'PERSON' in start_node.labels and 'LETTER' in end_node.labels:
+                    cypher = """
+                    MATCH (start:{0} {{name: $name, email: $email }}), (end:{1} {{id_chain: $id_chain, order_in_chain: $order_in_chain}})
+                    CREATE (start)-[:{2} {{date: $date}}]->(end)
+                    """.format(":".join(start_node.labels),
+                               ":".join(end_node.labels),
+                               relationship_obj.type)
+                    db.query(cypher,
+                             name=start_node.name,
+                             email=start_node.email,
+                             id_chain=end_node.id_chain,
+                             order_in_chain=end_node.order_in_chain,
+                             date=relationship_obj.date)
+                elif 'PERSON' in end_node.labels and 'LETTER' in start_node.labels:
+                    cypher = """
+                    MATCH (end:{0} {{name: $name, email: $email }}), (start:{1} {{id_chain: $id_chain, order_in_chain: $order_in_chain}})
+                    CREATE (start)-[:{2} {{date: $date}}]->(end)
+                    """.format(":".join(end_node.labels),
+                               ":".join(start_node.labels),
+                               relationship_obj.type)
+                    db.query(cypher,
+                             name=end_node.name,
+                             email=end_node.email,
+                             id_chain=start_node.id_chain,
+                             order_in_chain=start_node.order_in_chain,
+                             date=relationship_obj.date)
+                elif 'LETTER' in start_node.labels and 'LETTER' in end_node.labels:
+                    cypher = """
+                    MATCH (start:{0} {{id_chain: $id_chain_start, order_in_chain: $order_in_chain_start}}), (end:{1} {{id_chain: $id_chain_end, order_in_chain: $order_in_chain_end}})
+                    CREATE (start)-[:{2} {{date: $date}}]->(end)
+                    """.format(":".join(start_node.labels),
+                               ":".join(end_node.labels),
+                               relationship_obj.type)
+                    db.query(cypher,
+                             id_chain_start=start_node.id_chain,
+                             order_in_chain_start=start_node.order_in_chain,
+                             id_chain_end=end_node.id_chain,
+                             order_in_chain_end=end_node.order_in_chain,
+                             date=relationship_obj.date)
         return {"message": "JSON data successfully loaded into Neo4j database"}
     except Exception as e:
         # Handle exceptions (log, return error message, etc.)
