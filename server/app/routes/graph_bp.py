@@ -15,7 +15,6 @@ def parse_json(json_data):
     id_to_node = {}
     id_to_edge = {}
     for entry in json_data:
-        print(entry)
         entry_node = entry['n']
         rel = entry['r']
         target = entry['m']
@@ -125,7 +124,7 @@ def get_graph():
             graph_data['links'].append(relationship_obj.to_dict())
 
         graph_data_json = json.dumps(graph_data, default=custom_serializer)
-        return jsonify(graph_data_json)  # jsonify(graph_data_json)
+        return graph_data_json  # jsonify(graph_data_json)
     except Exception as e:
         # Handle exceptions (log, return error message, etc.)
         return jsonify({"error": f"Failed to get all. {str(e)}"}), 500
