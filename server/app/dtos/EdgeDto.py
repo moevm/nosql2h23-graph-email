@@ -1,5 +1,6 @@
 from typing import Dict, Union
 import datetime
+from neo4j.time import DateTime
 
 
 class Edge:
@@ -11,7 +12,7 @@ class Edge:
         self.properties: Dict[str, str] = edge['properties']
         date = self.properties.get('date', None)
         if date is not None and isinstance(date, str):
-            date = self.convert_to_isoformat(date)
+            date = self.convert_to_isoformat(date)  # Date.parse(date)  #
         self.date: Union[datetime.date, str] = date
         self.element_id: str = edge['elementId']
         self.start_node_element_id: str = edge['startNodeElementId']
@@ -26,10 +27,10 @@ class Edge:
         }
 
     @staticmethod
-    def convert_to_isoformat(date_str: str) -> Union[datetime.date, str]:
+    def convert_to_isoformat(date_str: str) -> Union[DateTime, str]:
         try:
             # Assuming the input date string is in a known format
-            date_obj = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ')
+            date_obj = DateTime.fromisoformat(date_str)  # datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ')
             return date_obj
         except ValueError as e:
             # Handle the case where the date string is not in the expected format

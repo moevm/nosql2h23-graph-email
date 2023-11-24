@@ -54,8 +54,8 @@ def parse_json(json_data):
 def custom_serializer(obj):
     # if isinstance(obj, datetime.datetime):
     #     return obj.isoformat()
-    # if isinstance(obj, datetime.timedelta):
-    #     return str(obj)
+    # if isinstance(obj, neo4j.time.Duration):
+    #     return obj.iso_format()
     if isinstance(obj, neo4j.time.DateTime):
         return str(obj)
 
@@ -68,7 +68,9 @@ def get_test():
 @graph_bp.route('/get_all', methods=['GET'])
 def get_graph():
     """
-    Создает граф, затем возвращает его и удаляет его.
+    Возвращает граф в виде json:
+    nodes: Все узлы
+    links: Все связи
     :return: json
     """
     try:
@@ -77,6 +79,7 @@ def get_graph():
         order = request.args.get("order", "ASC")
         limit = request.args.get("limit", 6, type=int)
         skip = request.args.get("skip", 0, type=int)
+        is_export = request.args.get("export", "yes", type=str)
 
         # Get User ID from JWT Auth (need to add @jwt_required(optional=True) after route)
         # user_id =
@@ -90,12 +93,18 @@ def get_graph():
         data = []
         for record in records:
             n, r, m = record['n'], record['r'], record['m']
+            n_properties = dict(n.items())
+            if n_properties.get('time_on_reply', None):
+                n_properties['time_on_reply'] = n_properties['time_on_reply'].iso_format()
+            m_properties = dict(m.items())
+            if m_properties.get('time_on_reply', None):
+                m_properties['time_on_reply'] = m_properties['time_on_reply'].iso_format()
             data.append({
                 "n": {
                     "labels": list(n.labels),
                     "identity": n.id,
                     "elementId": n.element_id,
-                    "properties": dict(n.items())
+                    "properties": n_properties
                 },
                 "r": {
                     "identity": r.id,
@@ -111,26 +120,29 @@ def get_graph():
                     "labels": list(m.labels),
                     "identity": m.id,
                     "elementId": m.element_id,
-                    "properties": dict(m.items())
+                    "properties": m_properties
                 }
             })
+        # print(data)
+        if is_export == "yes":
+            return json.dumps(data, default=custom_serializer)
+        else:
+            # Process the query result into a format suitable for export
+            graph_data = {'nodes': [], 'links': []}
+            id_to_node, id_to_edge = parse_json(data)
+            for node in id_to_node.values():
+                graph_data['nodes'].append(node.to_dict())
+            for relationship_obj in id_to_edge.values():
+                graph_data['links'].append(relationship_obj.to_dict())
 
-        # Process the query result into a format suitable for export
-        graph_data = {'nodes': [], 'links': []}
-        id_to_node, id_to_edge = parse_json(data)
-        for node in id_to_node.values():
-            graph_data['nodes'].append(node.to_dict())
-        for relationship_obj in id_to_edge.values():
-            graph_data['links'].append(relationship_obj.to_dict())
-
-        graph_data_json = json.dumps(graph_data, default=custom_serializer)
-        return graph_data_json  # jsonify(graph_data_json)
+            graph_data_json = json.dumps(graph_data, default=custom_serializer)
+            return graph_data_json  # jsonify(graph_data_json)
     except Exception as e:
         # Handle exceptions (log, return error message, etc.)
         return jsonify({"error": f"Failed to get all. {str(e)}"}), 500
 
 
-@graph_bp.route('/load_json', methods=['GET', 'POST'])
+@graph_bp.route('/load_json', methods=['POST'])
 def load_json():
     try:
         json_data = request.get_json()
@@ -191,7 +203,7 @@ def load_json():
                 if 'PERSON' in start_node.labels and 'LETTER' in end_node.labels:
                     cypher = """
                     MATCH (start:{0} {{name: $name, email: $email }}), (end:{1} {{id_chain: $id_chain, order_in_chain: $order_in_chain}})
-                    CREATE (start)-[:{2} {{date: $date}}]->(end)
+                    CREATE (start)-[:{2} {{date: datetime($date)}}]->(end)
                     """.format(":".join(start_node.labels),
                                ":".join(end_node.labels),
                                relationship_obj.type)
@@ -204,7 +216,7 @@ def load_json():
                 elif 'PERSON' in end_node.labels and 'LETTER' in start_node.labels:
                     cypher = """
                     MATCH (end:{0} {{name: $name, email: $email }}), (start:{1} {{id_chain: $id_chain, order_in_chain: $order_in_chain}})
-                    CREATE (start)-[:{2} {{date: $date}}]->(end)
+                    CREATE (start)-[:{2} {{date: datetime($date)}}]->(end)
                     """.format(":".join(end_node.labels),
                                ":".join(start_node.labels),
                                relationship_obj.type)
@@ -217,7 +229,7 @@ def load_json():
                 elif 'LETTER' in start_node.labels and 'LETTER' in end_node.labels:
                     cypher = """
                     MATCH (start:{0} {{id_chain: $id_chain_start, order_in_chain: $order_in_chain_start}}), (end:{1} {{id_chain: $id_chain_end, order_in_chain: $order_in_chain_end}})
-                    CREATE (start)-[:{2} {{date: $date}}]->(end)
+                    CREATE (start)-[:{2} {{date: datetime($date)}}]->(end)
                     """.format(":".join(start_node.labels),
                                ":".join(end_node.labels),
                                relationship_obj.type)

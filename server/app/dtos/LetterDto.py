@@ -1,6 +1,7 @@
 from typing import List, Dict, Union, Optional
 import datetime
 import isodate
+from neo4j.time import Duration
 
 
 class Letter:
@@ -17,11 +18,13 @@ class Letter:
         self.to: List[str] = self.properties.get('to', None)
         self.order_in_chain: int = self.properties.get('order_in_chain', None)
         self.time_on_reply: Optional[str, datetime.timedelta] = self.properties.get('time_on_reply', None)
-        try:
-            if self.time_on_reply and isinstance(self.time_on_reply, str):
-                self.time_on_reply: datetime.timedelta = isodate.parse_duration(self.time_on_reply)
-        except isodate.isoerror.ISO8601Error as e:
-            print(f"Error converting time_on_reply: {e}")
+        # try:
+        if self.time_on_reply and isinstance(self.time_on_reply, str):
+            # print(self.time_on_reply)
+            self.time_on_reply: Duration = Duration.from_iso_format(self.time_on_reply)  # isodate.parse_duration(self.time_on_reply)
+            # print(self.time_on_reply)
+        # except isodate.isoerror.ISO8601Error as e:
+        #     print(f"Error converting time_on_reply: {e}")
 
     def to_dict(self):
         person_dict = {
@@ -35,7 +38,7 @@ class Letter:
             "to": self.to
             }
         if self.time_on_reply:
-            person_dict["time_on_reply"] = self.time_on_reply
+            person_dict["time_on_reply"] = self.time_on_reply.iso_format()
         return person_dict
 
     def __repr__(self):
