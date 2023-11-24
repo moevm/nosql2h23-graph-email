@@ -133,26 +133,48 @@ def load_json():
                 """.format(':'.join(node.labels))
                 db.query(query=cypher, name=node.name, email=node.email)
             elif isinstance(node, LetterDto.Letter):
-                cypher = """
-                CREATE (n:{}
-                {{ subject : $subject,
-                 full_text : $full_text,
-                 id_chain : $id_chain,
-                 from : $_from,
-                 to : $to,
-                 order_in_chain : $order_in_chain,
-                 time_on_reply : $time_on_reply}})
-                """.format(':'.join(node.labels))
-                time_on_reply = node.time_on_reply if node.time_on_reply is not None else "null"
+                parameters = {
+                    'subject': node.subject,
+                    'full_text': node.full_text,
+                    'id_chain': node.id_chain,
+                    '_from': node._from,
+                    'to': node.to,
+                    'order_in_chain': node.order_in_chain,
+                }
+                if node.time_on_reply is not None:
+                    parameters = {
+                        'subject': node.subject,
+                        'full_text': node.full_text,
+                        'id_chain': node.id_chain,
+                        '_from': node._from,
+                        'to': node.to,
+                        'order_in_chain': node.order_in_chain,
+                        'time_on_reply': node.time_on_reply
+                    }
+                    cypher = """
+                    CREATE (n:{}
+                    {{ subject : $subject,
+                     full_text : $full_text,
+                     id_chain : $id_chain,
+                     from : $_from,
+                     to : $to,
+                     order_in_chain : $order_in_chain,
+                     time_on_reply : $time_on_reply}})
+                    """.format(':'.join(node.labels))
+                else:
+                    cypher = """
+                    CREATE (n:{}
+                    {{ subject : $subject,
+                     full_text : $full_text,
+                     id_chain : $id_chain,
+                     from : $_from,
+                     to : $to,
+                     order_in_chain : $order_in_chain}})
+                    """.format(':'.join(node.labels))
+
                 db.query(query=cypher,
                          db=None,
-                         subject=node.subject,
-                         full_text=node.full_text,
-                         id_chain=node.id_chain,
-                         _from=node._from,
-                         to=node.to,
-                         order_in_chain=node.order_in_chain,
-                         time_on_reply=time_on_reply)
+                         **parameters)
         for relationship_obj in id_to_edge.values():
             if isinstance(relationship_obj, EdgeDto.Edge):
                 start_node = id_to_node[relationship_obj.start]
