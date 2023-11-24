@@ -16,14 +16,27 @@ class Letter:
         self._from: str = self.properties.get('from', None)
         self.to: List[str] = self.properties.get('to', None)
         self.order_in_chain: int = self.properties.get('order_in_chain', None)
-        self.elementId: int = self.properties.get('elementId', None)
-        self.time_on_reply: Optional[str] = self.properties.get('time_on_reply', None)
+        self.time_on_reply: Optional[str, datetime.timedelta] = self.properties.get('time_on_reply', None)
         try:
-            if self.time_on_reply:
+            if self.time_on_reply and isinstance(self.time_on_reply, str):
                 self.time_on_reply: datetime.timedelta = isodate.parse_duration(self.time_on_reply)
         except isodate.isoerror.ISO8601Error as e:
             print(f"Error converting time_on_reply: {e}")
 
-    def __repr__(self):
+    def to_dict(self):
+        person_dict = {
+            "id": self.element_id,
+            "labels": self.labels,
+            "from": self._from,
+            "full_text": self.full_text,
+            "id_chain": self.id_chain,
+            "order_in_chain": self.order_in_chain,
+            "subject": self.subject,
+            "to": self.to
+            }
+        if self.time_on_reply:
+            person_dict["time_on_reply"] = self.time_on_reply
+        return person_dict
 
+    def __repr__(self):
         return "L from {}, to {}".format(self._from, self.to)

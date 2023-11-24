@@ -11,6 +11,14 @@ class Person:
         self.email: str = self.properties.get('email', None)
         self.element_id: str = elementId
 
+    def to_dict(self):
+        return {
+            "id": self.element_id,
+            "labels": self.labels,
+            "name": self.name,
+            "email": self.email
+            }
+
     def __repr__(self):
         return "P: {}, {}".format(self.name, self.email)
 

@@ -9,10 +9,21 @@ class Edge:
         self.end: int = edge['end']
         self.type: str = edge['type']
         self.properties: Dict[str, str] = edge['properties']
-        self.date: Union[datetime.date, str] = self.convert_to_isoformat(self.properties.get('date', None))
+        date = self.properties.get('date', None)
+        if date is not None and isinstance(date, str):
+            date = self.convert_to_isoformat(date)
+        self.date: Union[datetime.date, str] = date
         self.element_id: str = edge['elementId']
         self.start_node_element_id: str = edge['startNodeElementId']
         self.end_node_element_id: str = edge['endNodeElementId']
+
+    def to_dict(self):
+        return {
+            "date": self.date,
+            "source": self.start_node_element_id,
+            "target": self.end_node_element_id,
+            "type": self.type
+        }
 
     @staticmethod
     def convert_to_isoformat(date_str: str) -> Union[datetime.date, str]:
