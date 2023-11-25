@@ -5,6 +5,7 @@ from ..db import get_db, close_db
 from werkzeug.local import LocalProxy
 from ..dtos import PersonDto, EdgeDto, LetterDto
 import json
+from ..utilities.BlankFormatter import BlankFormatter
 
 db = LocalProxy(get_db)
 
@@ -112,6 +113,10 @@ def get_graph_nodes_edges(id_to_node,
 
 def is_it_true(value):
     return value.lower() == 'true'
+
+
+def to_Date(time_str):
+    return neo4j.time.DateTime.from_iso_format(time_str)
 
 
 def custom_serializer(obj):
@@ -275,22 +280,57 @@ def load_json():
         return jsonify({"error": f"Failed to load JSON data. {str(e)}"}), 500
 
 
-@graph_bp.route('/filter_by_sender', methods=['GET'])
-def filter_by_sender():
+@graph_bp.route('/filter', methods=['GET'])
+def search():
     try:
-        email = request.args.get("email", None, type=str)
+        email_sender = request.args.get("email_sender", None, type=str)
+        emails_delivers = request.args.getlist("email_deliver")
+        subject = request.args.get("subject", None, type=str)
+        start_date = request.args.get("start_date", "", type=to_Date)
+        end_date = request.args.get("end_date", "", type=to_Date)
         only_letters_for_view = request.args.get("only_letters_for_view", default=False, type=is_it_true)
-
+        parameters = {
+            "emails_delivers": emails_delivers,
+        }
+        included_filter = False
+        if email_sender:
+            parameters["filter_by_sender"] = "WHERE ((r:SEND OR r:DELIVER) AND m.from = SENDER)"
+            included_filter = True
+        if subject:
+            subject = subject.lower()
+            filter_by_subject = "WHERE " if not included_filter else "AND "
+            filter_by_subject += "(subject = toLower(m.subject) OR subject = toLower(n.subject))"
+            parameters["filter_by_subject"] = filter_by_subject
+            included_filter = True
+        if start_date:
+            filter_by_start_date = "WHERE " if not included_filter else "AND "
+            filter_by_start_date += "(date_start <= r.date)"
+            parameters["filter_by_start_date"] = filter_by_start_date
+            included_filter = True
+        if end_date:
+            filter_by_end_date = "WHERE " if not included_filter else "AND "
+            filter_by_end_date += "(r.date <= date_end)"
+            parameters["filter_by_end_date"] = filter_by_end_date
+            included_filter = True
         include_letters = True
         include_persons = not only_letters_for_view
         include_rels = not only_letters_for_view
-        cypher_query = """
-        WITH $sender AS SENDER
-        MATCH (n:PERSON)-[r]-(m:LETTER {from: SENDER})
-        WHERE r:SEND OR r:DELIVER
+        fmt = BlankFormatter()
+        cypher_query = fmt.format("""
+        WITH $sender AS SENDER, $subject AS subject, datetime($date_start) AS date_start, datetime($date_end) AS date_end
+        MATCH (n:PERSON)-[r]-(m:LETTER)
+        {filter_by_sender}
+        {filter_by_subject}
+        {filter_by_start_date}
+        {filter_by_end_date}
         RETURN n, r, m;
-        """
-        records = db.query(cypher_query, sender=email)
+        """, **parameters)
+        print(cypher_query)
+        records = db.query(cypher_query,
+                           sender=email_sender,
+                           subject=subject,
+                           date_start=start_date,
+                           date_end=end_date)
         data = records_to_array_dtos(records)
         id_to_node, id_to_edge = parse_json(data)
         graph_data_json = get_graph_nodes_edges(id_to_node,
@@ -300,7 +340,8 @@ def filter_by_sender():
                                                 include_rels)
         return graph_data_json
     except Exception as e:
-        return jsonify({"error": f"Failed filter by sender. {str(e)}"}), 500
+        return jsonify({"error": f"Failed search. {str(e)}"}), 500
+
 
 # @graph_bp.route('/filter_by_delivers', methods=['GET'])
 # def filter_by_delivers():
@@ -328,30 +369,3 @@ def filter_by_sender():
 #         return graph_data_json
 #     except Exception as e:
 #         return jsonify({"error": f"Failed filter by delivers. {str(e)}"}), 500
-
-
-@graph_bp.route('/search_by_subject', methods=['GET'])
-def search_by_subject():
-    try:
-        subject = request.args.getlist("subject")
-        only_letters_for_view = request.args.get("only_letters_for_view", default=False, type=is_it_true)
-        include_letters = True
-        include_persons = not only_letters_for_view
-        include_rels = not only_letters_for_view
-        cypher_query = """
-        WITH toLower($subject) AS subject
-        MATCH (n)-[r]->(m)
-        WHERE subject = toLower(m.subject) OR subject = toLower(n.subject)
-        RETURN n, r, m
-        """
-        records = db.query(cypher_query, subject=subject)
-        data = records_to_array_dtos(records)
-        id_to_node, id_to_edge = parse_json(data)
-        graph_data_json = get_graph_nodes_edges(id_to_node,
-                                                id_to_edge,
-                                                include_letters,
-                                                include_persons,
-                                                include_rels)
-        return graph_data_json
-    except Exception as e:
-        return jsonify({"error": f"Failed search by subject. {str(e)}"}), 500
