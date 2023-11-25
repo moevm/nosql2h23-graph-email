@@ -278,12 +278,10 @@ def search():
         email_sender = request.args.get("email_sender", None, type=str)
         emails_delivers = request.args.getlist("email_deliver")
         subject = request.args.get("subject", None, type=str)
-        start_date = request.args.get("start_date", "", type=to_Date)
-        end_date = request.args.get("end_date", "", type=to_Date)
+        start_date = request.args.get("start_date", None, type=to_Date)
+        end_date = request.args.get("end_date", None, type=to_Date)
         only_letters_for_view = request.args.get("only_letters_for_view", default=False, type=is_it_true)
-        parameters = {
-            "emails_delivers": emails_delivers,
-        }
+        parameters = {}
         included_filter = False
         if email_sender:
             parameters["filter_by_sender"] = "WHERE ((r:SEND OR r:DELIVER) AND m.from = SENDER)"
@@ -304,25 +302,41 @@ def search():
             filter_by_end_date += "(r.date <= date_end)"
             parameters["filter_by_end_date"] = filter_by_end_date
             included_filter = True
+        if len(emails_delivers) != 0:
+            extra_match_for_delivers = ", (m)-[r2:SEND]-(m2:PERSON)"
+            extra_return_for_delivers = ", r2, m2"
+            filter_by_delivers = "WHERE " if not included_filter else "AND "
+            filter_by_delivers += """ALL(email in list_of_delivers WHERE email in m.to)
+                AND (ANY(email in list_of_delivers WHERE n.email = email) OR n:MAIN)"""
+            parameters["extra_match_for_delivers"] = extra_match_for_delivers
+            parameters["extra_return_for_delivers"] = extra_return_for_delivers
+            parameters["filter_by_delivers"] = filter_by_delivers
+            included_filter = True
+
         include_letters = True
         include_persons = not only_letters_for_view
         include_rels = not only_letters_for_view
         fmt = BlankFormatter()
         cypher_query = fmt.format("""
-        WITH $sender AS SENDER, $subject AS subject, datetime($date_start) AS date_start, datetime($date_end) AS date_end
-        MATCH (n:PERSON)-[r]-(m:LETTER)
+        WITH $sender AS SENDER,
+        $subject AS subject,
+        datetime($date_start) AS date_start,
+        datetime($date_end) AS date_end,
+        $delivers AS list_of_delivers
+        MATCH (n:PERSON)-[r]-(m:LETTER){extra_match_for_delivers}
         {filter_by_sender}
         {filter_by_subject}
         {filter_by_start_date}
         {filter_by_end_date}
-        RETURN n, r, m;
+        {filter_by_delivers}
+        RETURN n, r, m{extra_return_for_delivers};
         """, **parameters)
-        print(cypher_query)
         records = db.query(cypher_query,
                            sender=email_sender,
                            subject=subject,
                            date_start=start_date,
-                           date_end=end_date)
+                           date_end=end_date,
+                           delivers=emails_delivers)
         data = records_to_array_dtos(records)
         id_to_node, id_to_edge = parse_json(data)
         graph_data_json = get_graph_nodes_edges(id_to_node,
@@ -333,30 +347,3 @@ def search():
         return graph_data_json
     except Exception as e:
         return jsonify({"error": f"Failed search. {str(e)}"}), 500
-
-# @graph_bp.route('/filter_by_delivers', methods=['GET'])
-# def filter_by_delivers():
-#     try:
-#         emails = request.args.getlist("email")
-#         only_letters_for_view = request.args.get("only_letters_for_view", default=False, type=is_it_true)
-#         include_letters = True
-#         include_persons = not only_letters_for_view
-#         include_rels = not only_letters_for_view
-#         cypher_query = """
-#         WITH $delivers AS list_of_delivers
-#         MATCH (n:PERSON)-[r]-(m:LETTER), (m)-[r2:SEND]-(m2:PERSON)
-#         WHERE ALL(email in list_of_delivers WHERE email in m.to)
-#         AND (ANY(email in list_of_delivers WHERE n.email = email) OR n:MAIN)
-#         RETURN n, r, m, r2, m2;
-#         """
-#         records = db.query(cypher_query, delivers=emails)
-#         data = records_to_array_dtos(records)
-#         id_to_node, id_to_edge = parse_json(data)
-#         graph_data_json = get_graph_nodes_edges(id_to_node,
-#                                                 id_to_edge,
-#                                                 include_letters,
-#                                                 include_persons,
-#                                                 include_rels)
-#         return graph_data_json
-#     except Exception as e:
-#         return jsonify({"error": f"Failed filter by delivers. {str(e)}"}), 500
