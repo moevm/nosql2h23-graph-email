@@ -13,42 +13,38 @@ graph_bp = Blueprint("graph_bp", __name__, url_prefix="/graph")
 
 
 def parse_json(json_data):
+    def create_node(node_entry):
+        node_labels = node_entry['labels']
+        node_properties = node_entry['properties']
+
+        if 'PERSON' in node_labels:
+            node = PersonDto.Person(identity=node_entry['identity'],
+                                    elementId=node_entry['elementId'],
+                                    labels=node_labels,
+                                    properties=node_properties)
+
+        elif 'LETTER' in node_labels:
+            node = LetterDto.Letter(
+                identity=node_entry['identity'],
+                elementId=node_entry['elementId'],
+                labels=node_labels,
+                properties=node_properties
+            )
+        else:
+            node = None
+        return node
+
     id_to_node = {}
     id_to_edge = {}
     for entry in json_data:
-        entry_node = entry['n']
-        rel = entry['r']
-        target = entry['m']
-        if 'PERSON' in entry_node['labels']:
-            person_node = PersonDto.Person(identity=entry_node['identity'],
-                                           elementId=entry_node['elementId'],
-                                           labels=entry_node['labels'],
-                                           properties=entry_node['properties'])
-            if entry_node['identity'] not in id_to_node.keys():
-                id_to_node[entry_node['identity']] = person_node
-        elif 'LETTER' in entry_node['labels']:
-            letter_node = LetterDto.Letter(identity=entry_node['identity'],
-                                           elementId=entry_node['elementId'],
-                                           labels=entry_node['labels'],
-                                           properties=entry_node['properties'])
-            if entry_node['identity'] not in id_to_node.keys():
-                id_to_node[entry_node['identity']] = letter_node
-        if 'PERSON' in target['labels']:
-            person_target = PersonDto.Person(identity=target['identity'],
-                                             elementId=target['elementId'],
-                                             labels=target['labels'],
-                                             properties=target['properties'])
-            if target['identity'] not in id_to_node.keys():
-                id_to_node[target['identity']] = person_target
-        elif 'LETTER' in target['labels']:
-            letter_target = LetterDto.Letter(identity=target['identity'],
-                                             elementId=target['elementId'],
-                                             labels=target['labels'],
-                                             properties=target['properties'])
-            if target['identity'] not in id_to_node.keys():
-                id_to_node[target['identity']] = letter_target
-        relationship = EdgeDto.Edge(rel)
-        id_to_edge[relationship.identity] = relationship
+        for key, value in entry.items():
+            if key.startswith('n') or key.startswith('m'):
+                node = create_node(value)
+                if node._identity not in id_to_node.keys():
+                    id_to_node[node._identity] = node
+            elif key.startswith('r'):
+                relationship = EdgeDto.Edge(value)
+                id_to_edge[relationship.identity] = relationship
     return id_to_node, id_to_edge
 
 
@@ -337,7 +333,6 @@ def search():
         return graph_data_json
     except Exception as e:
         return jsonify({"error": f"Failed search. {str(e)}"}), 500
-
 
 # @graph_bp.route('/filter_by_delivers', methods=['GET'])
 # def filter_by_delivers():
