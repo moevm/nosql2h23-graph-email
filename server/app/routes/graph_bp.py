@@ -301,3 +301,57 @@ def filter_by_sender():
         return graph_data_json
     except Exception as e:
         return jsonify({"error": f"Failed filter by sender. {str(e)}"}), 500
+
+# @graph_bp.route('/filter_by_delivers', methods=['GET'])
+# def filter_by_delivers():
+#     try:
+#         emails = request.args.getlist("email")
+#         only_letters_for_view = request.args.get("only_letters_for_view", default=False, type=is_it_true)
+#         include_letters = True
+#         include_persons = not only_letters_for_view
+#         include_rels = not only_letters_for_view
+#         cypher_query = """
+#         WITH $delivers AS list_of_delivers
+#         MATCH (n:PERSON)-[r]-(m:LETTER), (m)-[r2:SEND]-(m2:PERSON)
+#         WHERE ALL(email in list_of_delivers WHERE email in m.to)
+#         AND (ANY(email in list_of_delivers WHERE n.email = email) OR n:MAIN)
+#         RETURN n, r, m, r2, m2;
+#         """
+#         records = db.query(cypher_query, delivers=emails)
+#         data = records_to_array_dtos(records)
+#         id_to_node, id_to_edge = parse_json(data)
+#         graph_data_json = get_graph_nodes_edges(id_to_node,
+#                                                 id_to_edge,
+#                                                 include_letters,
+#                                                 include_persons,
+#                                                 include_rels)
+#         return graph_data_json
+#     except Exception as e:
+#         return jsonify({"error": f"Failed filter by delivers. {str(e)}"}), 500
+
+
+@graph_bp.route('/search_by_subject', methods=['GET'])
+def search_by_subject():
+    try:
+        subject = request.args.getlist("subject")
+        only_letters_for_view = request.args.get("only_letters_for_view", default=False, type=is_it_true)
+        include_letters = True
+        include_persons = not only_letters_for_view
+        include_rels = not only_letters_for_view
+        cypher_query = """
+        WITH toLower($subject) AS subject
+        MATCH (n)-[r]->(m)
+        WHERE subject = toLower(m.subject) OR subject = toLower(n.subject)
+        RETURN n, r, m
+        """
+        records = db.query(cypher_query, subject=subject)
+        data = records_to_array_dtos(records)
+        id_to_node, id_to_edge = parse_json(data)
+        graph_data_json = get_graph_nodes_edges(id_to_node,
+                                                id_to_edge,
+                                                include_letters,
+                                                include_persons,
+                                                include_rels)
+        return graph_data_json
+    except Exception as e:
+        return jsonify({"error": f"Failed search by subject. {str(e)}"}), 500
