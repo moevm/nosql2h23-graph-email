@@ -51,11 +51,70 @@ def parse_json(json_data):
     return id_to_node, id_to_edge
 
 
+def records_to_array_dtos(records):
+    data = []
+    for record in records:
+        n, r, m = record['n'], record['r'], record['m']
+        n_properties = dict(n.items())
+        if n_properties.get('time_on_reply', None):
+            n_properties['time_on_reply'] = n_properties['time_on_reply'].iso_format()
+        m_properties = dict(m.items())
+        if m_properties.get('time_on_reply', None):
+            m_properties['time_on_reply'] = m_properties['time_on_reply'].iso_format()
+        data.append({
+            "n": {
+                "labels": list(n.labels),
+                "identity": n.id,
+                "elementId": n.element_id,
+                "properties": n_properties
+            },
+            "r": {
+                "identity": r.id,
+                "elementId": r.element_id,
+                "type": r.type,
+                "start": n.id,
+                "end": m.id,
+                "startNodeElementId": n.element_id,
+                "endNodeElementId": m.element_id,
+                "properties": dict(r.items())
+            },
+            "m": {
+                "labels": list(m.labels),
+                "identity": m.id,
+                "elementId": m.element_id,
+                "properties": m_properties
+            }
+        })
+    return data
+
+
+def get_graph_nodes_edges(id_to_node,
+                          id_to_edge,
+                          include_letters=True,
+                          include_persons=True,
+                          include_rels=True):
+    graph_data = {'nodes_person': [], 'nodes_letter': [], 'links': []}
+    for node in id_to_node.values():
+        node_dict = node.to_dict()
+        if 'PERSON' in node_dict['labels'] and 'MAIN' not in node_dict['labels'] and include_persons:
+            graph_data['nodes_person'].append(node_dict)
+        elif 'LETTER' in node_dict['labels'] and include_letters:
+            graph_data['nodes_letter'].append(node_dict)
+        elif 'MAIN' in node_dict['labels'] and include_persons:
+            graph_data['main_person'] = node_dict
+    if include_rels:
+        for relationship_obj in id_to_edge.values():
+            graph_data['links'].append(relationship_obj.to_dict())
+
+    graph_data_json = json.dumps(graph_data, default=custom_serializer)
+    return graph_data_json
+
+
+def is_it_true(value):
+    return value.lower() == 'true'
+
+
 def custom_serializer(obj):
-    # if isinstance(obj, datetime.datetime):
-    #     return obj.isoformat()
-    # if isinstance(obj, neo4j.time.Duration):
-    #     return obj.iso_format()
     if isinstance(obj, neo4j.time.DateTime):
         return str(obj)
 
@@ -79,7 +138,12 @@ def get_graph():
         order = request.args.get("order", "ASC")
         limit = request.args.get("limit", 6, type=int)
         skip = request.args.get("skip", 0, type=int)
-        is_export = request.args.get("export", "yes", type=str)
+        is_export = request.args.get("export", default=True, type=is_it_true)
+        only_letters_for_view = request.args.get("only_letters_for_view", default=False, type=is_it_true)
+
+        include_letters = True
+        include_persons = not only_letters_for_view
+        include_rels = not only_letters_for_view
 
         # Get User ID from JWT Auth (need to add @jwt_required(optional=True) after route)
         # user_id =
@@ -90,52 +154,18 @@ def get_graph():
                         LIMIT 25
                     """
         records = db.query(cypher_query)
-        data = []
-        for record in records:
-            n, r, m = record['n'], record['r'], record['m']
-            n_properties = dict(n.items())
-            if n_properties.get('time_on_reply', None):
-                n_properties['time_on_reply'] = n_properties['time_on_reply'].iso_format()
-            m_properties = dict(m.items())
-            if m_properties.get('time_on_reply', None):
-                m_properties['time_on_reply'] = m_properties['time_on_reply'].iso_format()
-            data.append({
-                "n": {
-                    "labels": list(n.labels),
-                    "identity": n.id,
-                    "elementId": n.element_id,
-                    "properties": n_properties
-                },
-                "r": {
-                    "identity": r.id,
-                    "elementId": r.element_id,
-                    "type": r.type,
-                    "start": n.id,
-                    "end": m.id,
-                    "startNodeElementId": n.element_id,
-                    "endNodeElementId": m.element_id,
-                    "properties": dict(r.items())
-                },
-                "m": {
-                    "labels": list(m.labels),
-                    "identity": m.id,
-                    "elementId": m.element_id,
-                    "properties": m_properties
-                }
-            })
+        data = records_to_array_dtos(records)
         # print(data)
-        if is_export == "yes":
+        if is_export:
             return json.dumps(data, default=custom_serializer)
         else:
             # Process the query result into a format suitable for export
-            graph_data = {'nodes': [], 'links': []}
             id_to_node, id_to_edge = parse_json(data)
-            for node in id_to_node.values():
-                graph_data['nodes'].append(node.to_dict())
-            for relationship_obj in id_to_edge.values():
-                graph_data['links'].append(relationship_obj.to_dict())
-
-            graph_data_json = json.dumps(graph_data, default=custom_serializer)
+            graph_data_json = get_graph_nodes_edges(id_to_node,
+                                                    id_to_edge,
+                                                    include_letters,
+                                                    include_persons,
+                                                    include_rels)
             return graph_data_json  # jsonify(graph_data_json)
     except Exception as e:
         # Handle exceptions (log, return error message, etc.)
@@ -243,3 +273,31 @@ def load_json():
     except Exception as e:
         # Handle exceptions (log, return error message, etc.)
         return jsonify({"error": f"Failed to load JSON data. {str(e)}"}), 500
+
+
+@graph_bp.route('/filter_by_sender', methods=['GET'])
+def filter_by_sender():
+    try:
+        email = request.args.get("email", None, type=str)
+        only_letters_for_view = request.args.get("only_letters_for_view", default=False, type=is_it_true)
+
+        include_letters = True
+        include_persons = not only_letters_for_view
+        include_rels = not only_letters_for_view
+        cypher_query = """
+        WITH $sender AS SENDER
+        MATCH (n:PERSON)-[r]-(m:LETTER {from: SENDER})
+        WHERE r:SEND OR r:DELIVER
+        RETURN n, r, m;
+        """
+        records = db.query(cypher_query, sender=email)
+        data = records_to_array_dtos(records)
+        id_to_node, id_to_edge = parse_json(data)
+        graph_data_json = get_graph_nodes_edges(id_to_node,
+                                                id_to_edge,
+                                                include_letters,
+                                                include_persons,
+                                                include_rels)
+        return graph_data_json
+    except Exception as e:
+        return jsonify({"error": f"Failed filter by sender. {str(e)}"}), 500
