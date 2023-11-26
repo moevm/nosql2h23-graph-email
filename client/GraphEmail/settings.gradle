@@ -1,0 +1,33 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = "Graph Email"
+include ':app'
+include ':backend'
+include ':backend:api'
+include ':backend:utils'
+include ':common'
+include ':common:domain'
+include ':common:router'
+include ':core'
+include ':core:dagger'
+include ':core:dependency'
+include ':core:uiComponent'
+include ':data'
+include ':domain'
+include ':features'
+include ':features:login'
+include ':features:login:presentation'
+include ':features:login:domain'
+include ':features:login:router'
