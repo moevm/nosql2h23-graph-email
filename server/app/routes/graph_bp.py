@@ -89,16 +89,18 @@ def get_graph_data():
         datetime($date_end) AS date_end,
         $delivers AS list_of_delivers
         MATCH (n:PERSON)-[r]-(m:LETTER){extra_match_for_delivers}
+        OPTIONAL MATCH (n3:LETTER)-[r3:CHAIN]-(m3:LETTER)
         {filter_by_sender}
         {filter_by_subject}
         {filter_by_start_date}
         {filter_by_end_date}
         {filter_by_delivers}
-        RETURN n, r, m{extra_return_for_delivers}
+        RETURN n, r, m{extra_return_for_delivers}, n3, r3, m3
         ORDER BY n.id {order}
         SKIP {skip}
         LIMIT {limit};
         """, **parameters)
+        print(cypher_query)
         records = db.query(cypher_query,
                            sender=email_sender,
                            subject=subject,

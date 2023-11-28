@@ -72,6 +72,52 @@ def records_to_array_dtos(records):
     return data
 
 
+def path_to_array_dtos(path):
+    path_nodes = path.nodes
+    path_rels = path.relationships
+    id_to_node = {}
+    id_to_edge = {}
+    # дублирование кода
+    for value in path_nodes:
+        key = value.id
+        if isinstance(value, neo4j.graph.Node):
+            labels = list(value.labels)
+            properties = dict(value.items())
+            if 'PERSON' in labels:
+                id_to_node[key] = PersonDto.Person(identity=value.id,
+                                                   elementId=value.element_id,
+                                                   labels=labels,
+                                                   properties=properties)
+            elif 'LETTER' in labels:
+                if properties.get('time_on_reply', None):
+                    properties['time_on_reply'] = properties['time_on_reply'].iso_format()
+
+                id_to_node[key] = LetterDto.Letter(
+                    identity=value.id,
+                    elementId=value.element_id,
+                    labels=labels,
+                    properties=properties)
+
+    for value in path_rels:
+        if isinstance(value, neo4j.graph.Relationship):
+            properties = dict(value.items())
+            # TODO: необходимо изменить классы dto, таким образом, чтобы можно было туда закинуть класс Node, Rel и т.п.
+            edge = {
+                    "identity": value.id,
+                    "elementId": value.element_id,
+                    "type": value.type,
+                    "start": value.start_node.id,
+                    "end": value.end_node.id,
+                    "startNodeElementId": value.start_node.element_id,
+                    "endNodeElementId": value.end_node.element_id,
+                    "properties": properties
+                }
+            relationship = EdgeDto.Edge(edge)
+            id_to_edge[relationship.identity] = relationship
+
+    return id_to_node, id_to_edge
+
+
 def get_graph_nodes_edges(id_to_node,
                           id_to_edge,
                           include_letters=True,

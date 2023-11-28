@@ -5,7 +5,7 @@ from werkzeug.local import LocalProxy
 from ..dtos import PersonDto, EdgeDto, LetterDto
 import json
 from ..utilities.BlankFormatter import BlankFormatter
-from ..utilities.utilities import to_Date, is_it_true
+from ..utilities.utilities import to_Date, is_it_true, path_to_array_dtos, get_graph_nodes_edges
 
 db = LocalProxy(get_db)
 
@@ -61,11 +61,11 @@ def get_analytics():
                 """, **parameters)
 
         record = db.query(cypher_query,
-                           single=True,
-                           contact=email_contact,
-                           id_chain_letter=id_chain_letter,
-                           date_start=start_date,
-                           date_end=end_date)
+                          single=True,
+                          contact=email_contact,
+                          id_chain_letter=id_chain_letter,
+                          date_start=start_date,
+                          date_end=end_date)
 
         record_data = {}
         for key, value in record.items():
@@ -81,8 +81,27 @@ def get_analytics():
 
 @analytics_bp.route('/get_max_chain', methods=['GET'])
 def get_max_chain():
+    """
+    Получение максимальной цепочки у главного пользователя.
+    :return: JSON {nodes_person: [], nodes_letter: [], links: []}
+    """
     try:
-        pass
+        cypher_query = """
+        MATCH p=(:LETTER {order_in_chain: 0})-[:CHAIN*]->(:LETTER)
+        WITH MAX(length(p)) AS max_length
+        MATCH path=(:LETTER)-[:CHAIN*]->(:LETTER)
+        WHERE length(path) = max_length
+        RETURN path
+        """
+        record = db.query(cypher_query, single=True)
+        path = record["path"]
+        id_to_node, id_to_edge = path_to_array_dtos(path)
+        graph_data_json = get_graph_nodes_edges(id_to_node,
+                                                id_to_edge,
+                                                include_letters=True,
+                                                include_persons=True,
+                                                include_rels=True)
+        return graph_data_json
     except Exception as e:
         return jsonify({"error": f"Failed get max chain. {str(e)}"}), 500
 
