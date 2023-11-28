@@ -115,12 +115,32 @@ def get_min_chain():
     chain_id_min_path_count - значение chain_id, который имеет мин. кол-во писем в цепочке
     """
     try:
-        cypher_query = """
-        MATCH path=(:LETTER {order_in_chain: 0})-[:CHAIN*]->(end_l:LETTER)
+        start_date = request.args.get("start_date", None, type=to_Date)
+        end_date = request.args.get("end_date", None, type=to_Date)
+
+        parameters = {}
+        included_filter = False
+        if start_date:
+            filter_by_start_date = "WHERE " if not included_filter else "AND "
+            filter_by_start_date += "ALL(r in r_list WHERE date_start <= r.date)"
+            parameters["filter_by_start_date"] = filter_by_start_date
+            included_filter = True
+        if end_date:
+            filter_by_end_date = "WHERE " if not included_filter else "AND "
+            filter_by_end_date += "ALL(r in r_list WHERE r.date <= date_end)"
+            parameters["filter_by_end_date"] = filter_by_end_date
+            included_filter = True
+        fmt = BlankFormatter()
+        cypher_query = fmt.format("""
+        WITH datetime($date_start) AS date_start, 
+        datetime($date_end) AS date_end
+        MATCH path=(:LETTER {{order_in_chain: 0}})-[r_list:CHAIN*]->(end_l:LETTER)
+        {filter_by_start_date}
+        {filter_by_end_date}
         WITH end_l.id_chain AS chain_id, COUNT(nodes(path)) AS path_count, COLLECT(path) AS path
         RETURN path_count, chain_id;
-        """
-        records = db.query(cypher_query)
+        """, **parameters)
+        records = db.query(cypher_query, date_start=start_date, date_end=end_date)
         chain_id_to_path_count = records_to_collection_path_count(records)
         min_chain_id = get_min_chain_id(chain_id_to_path_count)
         return jsonify({"chain_id_to_path_count": chain_id_to_path_count, "chain_id_min_path_count": min_chain_id})
