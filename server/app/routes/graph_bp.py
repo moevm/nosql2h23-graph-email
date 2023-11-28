@@ -100,7 +100,6 @@ def get_graph_data():
         SKIP {skip}
         LIMIT {limit};
         """, **parameters)
-        print(cypher_query)
         records = db.query(cypher_query,
                            sender=email_sender,
                            subject=subject,

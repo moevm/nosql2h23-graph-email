@@ -151,3 +151,24 @@ def custom_serializer(obj):
 
 def is_it_true(value):
     return value.lower() == 'true'
+
+
+def records_to_collection_path_count(records):
+    chain_ids = {}
+    for record in records:
+        chain_id = int(record["chain_id"])
+        path_count = int(record["path_count"])
+        chain_ids[chain_id] = path_count
+    return chain_ids
+
+
+def get_min_chain_id(chain_ids):
+    min_chain_id = None
+    min_path_count = None
+    for chain_id in chain_ids.keys():
+        path_count = chain_ids[chain_id]
+        if min_path_count is None or path_count < min_path_count:
+            min_path_count = path_count
+            min_chain_id = chain_id
+    return min_chain_id
+

@@ -5,7 +5,7 @@ from werkzeug.local import LocalProxy
 from ..dtos import PersonDto, EdgeDto, LetterDto
 import json
 from ..utilities.BlankFormatter import BlankFormatter
-from ..utilities.utilities import to_Date, is_it_true, path_to_array_dtos, get_graph_nodes_edges
+from ..utilities.utilities import to_Date, is_it_true, path_to_array_dtos, get_graph_nodes_edges, records_to_collection_path_count, get_min_chain_id
 
 db = LocalProxy(get_db)
 
@@ -83,6 +83,7 @@ def get_analytics():
 def get_max_chain():
     """
     Получение максимальной цепочки у главного пользователя.
+    Возвращает только письма и связи между ними.
     :return: JSON {nodes_person: [], nodes_letter: [], links: []}
     """
     try:
@@ -99,7 +100,7 @@ def get_max_chain():
         graph_data_json = get_graph_nodes_edges(id_to_node,
                                                 id_to_edge,
                                                 include_letters=True,
-                                                include_persons=True,
+                                                include_persons=False,
                                                 include_rels=True)
         return graph_data_json
     except Exception as e:
@@ -108,7 +109,20 @@ def get_max_chain():
 
 @analytics_bp.route('/get_min_chain', methods=['GET'])
 def get_min_chain():
+    """
+    Получить мин. цепочку
+    :return: JSON: chain_id_to_path_count - json: ключ chain_id, значение кол-во писем в цепочке
+    chain_id_min_path_count - значение chain_id, который имеет мин. кол-во писем в цепочке
+    """
     try:
-        pass
+        cypher_query = """
+        MATCH path=(:LETTER {order_in_chain: 0})-[:CHAIN*]->(end_l:LETTER)
+        WITH end_l.id_chain AS chain_id, COUNT(nodes(path)) AS path_count, COLLECT(path) AS path
+        RETURN path_count, chain_id;
+        """
+        records = db.query(cypher_query)
+        chain_id_to_path_count = records_to_collection_path_count(records)
+        min_chain_id = get_min_chain_id(chain_id_to_path_count)
+        return jsonify({"chain_id_to_path_count": chain_id_to_path_count, "chain_id_min_path_count": min_chain_id})
     except Exception as e:
         return jsonify({"error": f"Failed get min chain. {str(e)}"}), 500
