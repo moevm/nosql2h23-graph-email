@@ -1,4 +1,4 @@
-import neo4j
+from neo4j.time import DateTime
 from flask import Blueprint, jsonify, request, send_file, abort
 from ..db import get_db, close_db
 from werkzeug.local import LocalProxy
@@ -14,7 +14,13 @@ analytics_bp = Blueprint("analytics_bp", __name__, url_prefix="/analytics")
 @analytics_bp.route('/get_analytics', methods=['GET'])
 def get_analytics():
     try:
-        pass
+        contact = request.args.get("email_contact", None, type=str)
+        start_date = request.args.get("start_date", None, type=convert_from_iso_format)
+        end_date = request.args.get("end_date", None, type=convert_from_iso_format)
+
+
+
+
     except Exception as e:
         return jsonify({"error": f"Failed get analytics. {str(e)}"}), 500
 
@@ -33,4 +39,3 @@ def get_max_chain():
         pass
     except Exception as e:
         return jsonify({"error": f"Failed get min chain. {str(e)}"}), 500
-
