@@ -1,4 +1,3 @@
-import datetime
 import neo4j
 from flask import Blueprint, jsonify, request, send_file, abort
 from ..db import get_db, close_db
