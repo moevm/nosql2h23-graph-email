@@ -1,5 +1,6 @@
 from app import app
 
+
 if __name__ == "__main__":
     port = app.config.get('FLASK_PORT')
 
