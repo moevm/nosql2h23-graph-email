@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.example.core.dependency.destinationsProvider
 import com.example.core.dependency.findDestinations
 import com.example.login.router.LoginEntry
+import com.example.mail_list.router.MailListEntry
 import com.google.accompanist.navigation.animation.AnimatedNavHost
 import com.google.accompanist.navigation.animation.rememberAnimatedNavController
 
@@ -19,6 +20,7 @@ fun Navigation() {
     val navController = rememberAnimatedNavController()
     val context = (LocalContext.current as Activity)
     val loginScreen = context.findDestinations<LoginEntry>()
+    val mailListScreen = context.findDestinations<MailListEntry>()
 
     Box(Modifier.fillMaxSize()) {
         AnimatedNavHost(
@@ -26,6 +28,13 @@ fun Navigation() {
             startDestination = loginScreen.destination()
         ) {
             with(loginScreen) {
+                animatedComposable(
+                    navController,
+                    context.destinationsProvider,
+                )
+            }
+
+            with(mailListScreen) {
                 animatedComposable(
                     navController,
                     context.destinationsProvider,

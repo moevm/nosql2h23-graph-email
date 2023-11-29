@@ -7,7 +7,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
-private const val HOST = "http://10.7.7.10:5000/"
+private const val HOST = "http://192.168.1.216:5000"
 class NetworkProvider {
 
     private val client = OkHttpClient.Builder().apply {

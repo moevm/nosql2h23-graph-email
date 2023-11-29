@@ -4,7 +4,8 @@ import dagger.Module
 
 @Module(
     includes = [
-        LoginDepsModule::class
+        LoginDepsModule::class,
+        MailListDepsModule::class,
     ]
 )
 interface FeatureDepsModule

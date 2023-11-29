@@ -1,4 +1,4 @@
-package com.example.login.presentation
+package com.example.mail_list.presentation
 
 import android.app.Activity
 import androidx.compose.runtime.Composable
@@ -6,17 +6,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import com.example.common.router.Destinations
-import com.example.common.router.find
-import com.example.common.router.navigateAndClean
 import com.example.core.dependency.findDependencies
 import com.example.core.dependency.injectedViewModel
-import com.example.login.presentation.di.DaggerLoginComponent
-import com.example.login.presentation.ui.LoginScreen
-import com.example.login.router.LoginEntry
+import com.example.mail_list.presentation.di.DaggerMailListComponent
+import com.example.mail_list.presentation.ui.MailListScreen
 import com.example.mail_list.router.MailListEntry
 import javax.inject.Inject
 
-class LoginEntryImpl @Inject constructor() : LoginEntry(){
+class MailListEntryImpl @Inject constructor() : MailListEntry(){
 
     @Composable
     override fun Composable(
@@ -26,19 +23,13 @@ class LoginEntryImpl @Inject constructor() : LoginEntry(){
     ) {
         val context = LocalContext.current
         val viewModel = injectedViewModel {
-            DaggerLoginComponent.builder()
-                .loginDeps((context as Activity).findDependencies())
+            DaggerMailListComponent.builder()
+                .mailListDeps((context as Activity).findDependencies())
                 .build()
-                .loginViewModel
+                .mailListViewModel
         }
-        LoginScreen(
+        MailListScreen(
             viewModel = viewModel,
-            navigateToMailList = {
-                val destination = destinations
-                    .find<MailListEntry>()
-                    .destination()
-                navController.navigateAndClean(destination)
-            }
         )
     }
 }

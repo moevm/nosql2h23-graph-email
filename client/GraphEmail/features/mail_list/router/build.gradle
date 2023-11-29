@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace 'com.example.login.domain'
+    namespace 'com.example.login.router'
     compileSdk 33
 
     defaultConfig {
@@ -27,6 +27,7 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.core:core-ktx:1.8.0'
-    implementation(project(":common:domain"))
+    implementation 'androidx.navigation:navigation-common-ktx:2.5.3'
+
+    implementation(project(":common:router"))
 }
