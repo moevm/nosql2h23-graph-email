@@ -43,6 +43,33 @@ def get_letter_data():
         return jsonify({"error": f"Failed get letter data. {str(e)}"}), 500
 
 
+@graph_bp.route('/get_person_data', methods=['GET'])
+def get_person_data():
+    try:
+        email_person = request.args.get("email_person", None, type=str)
+        cypher_query = """
+        WITH $email_person AS email_person
+        MATCH (n:PERSON)
+        WHERE n.email = email_person
+        RETURN n
+        """
+        records = db.query(cypher_query,
+                           email_person=email_person)
+        data = records_to_array_dtos(records)
+        id_to_node, id_to_edge = parse_json(data)
+        graph_data_json = get_graph_nodes_edges(id_to_node,
+                                                id_to_edge,
+                                                False,
+                                                True,
+                                                False)
+        graph_data_dict = json.loads(graph_data_json)
+        if "main_person" not in graph_data_dict:
+            return graph_data_dict["nodes_person"][0]
+        return graph_data_dict["main_person"]
+    except Exception as e:
+        return jsonify({"error": f"Failed get letter data. {str(e)}"}), 500
+
+
 @graph_bp.route('/graph_data', methods=['GET'])
 def get_graph_data():
     """
