@@ -1,6 +1,6 @@
 import datetime
 import neo4j
-from flask import Blueprint, jsonify, request, send_file, abort
+from flask import Blueprint, jsonify, request, send_file, abort, render_template
 from ..db import get_db, close_db
 from werkzeug.local import LocalProxy
 from ..dtos import PersonDto, EdgeDto, LetterDto
@@ -118,7 +118,7 @@ def custom_serializer(obj):
 
 @graph_bp.route('/', methods=['GET'])
 def get_test():
-    return "Testing"
+    return render_template('index.html')
 
 
 @graph_bp.route('/graph_data', methods=['GET'])
