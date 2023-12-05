@@ -17,6 +17,32 @@ def get_test():
     return "Testing"
 
 
+@graph_bp.route('/get_letter_data', methods=['GET'])
+def get_letter_data():
+    try:
+        letter_element_id = request.args.get("letter_element_id", None, type=str)
+        letter_element_id = int(letter_element_id.split(":")[-1])
+        cypher_query = """
+        WITH $letter_id AS letter_id
+        MATCH (n:LETTER)
+        WHERE ID(n) = letter_id
+        RETURN n
+        """
+        records = db.query(cypher_query,
+                           letter_id=letter_element_id)
+        data = records_to_array_dtos(records)
+        id_to_node, id_to_edge = parse_json(data)
+        graph_data_json = get_graph_nodes_edges(id_to_node,
+                                                id_to_edge,
+                                                True,
+                                                False,
+                                                False)
+        graph_data_dict = json.loads(graph_data_json)
+        return graph_data_dict["nodes_letter"][0]
+    except Exception as e:
+        return jsonify({"error": f"Failed get letter data. {str(e)}"}), 500
+
+
 @graph_bp.route('/graph_data', methods=['GET'])
 def get_graph_data():
     """
