@@ -13,8 +13,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
 
@@ -53,7 +51,7 @@ class MailListViewModel @Inject constructor(
         val nodesPersonsMap = mailListEntity.nodesPerson?.associateBy { it.id ?: "" } ?: emptyMap()
         val nodesLettersMap = mailListEntity.nodesLetter?.associateBy { it.id ?: "" } ?: emptyMap()
         val mainPersonMap = mailListEntity.mainPerson?.let { mapOf(it.id to it) } ?: emptyMap()
-
+        Log.d("POPPO", mailListEntity.toString())
         return mailListEntity.links?.flatMap { link ->
             val sourcePerson = nodesPersonsMap[link.source ?: ""]
             val targetPerson = nodesPersonsMap[link.target ?: ""]

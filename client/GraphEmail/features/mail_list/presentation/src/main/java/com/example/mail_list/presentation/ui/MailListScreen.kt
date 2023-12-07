@@ -1,5 +1,6 @@
 package com.example.mail_list.presentation.ui
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -7,15 +8,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Scaffold
 import androidx.compose.material.TopAppBar
-import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -30,8 +35,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import com.example.mail_list.presentation.ui.model.Mail
 
+@SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun MailListScreen(
     viewModel: MailListViewModel
@@ -116,6 +121,33 @@ fun MailListScreen(
                     }
                 }
             }
+            FloatingActionButton(
+                onClick = { /* Действие по нажатию кнопки */ },
+                modifier = Modifier
+                    .wrapContentSize(Alignment.BottomEnd)
+                    .padding(16.dp)
+                    .size(56.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Favorite,
+                    contentDescription = null,
+                    tint = Color.White
+                )
+            }
         }
     )
+    /*
+    AndroidView(factory = {
+        WebView(it).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            webViewClient = WebViewClient()
+            loadUrl("http://192.168.1.216:5000/api/graph/")
+            settings.javaScriptEnabled = true
+        }
+    }, update = {
+        it.loadUrl("http://192.168.1.216:5000/api/graph/")
+    })*/
 }
