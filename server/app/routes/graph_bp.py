@@ -83,7 +83,6 @@ def get_graph_data():
         # sort = request.args.get("sort", "id")
         order = request.args.get("order", "ASC")
         skip = request.args.get("skip", 0, type=int)
-        limit = request.args.get("limit", 25, type=int)
 
         email_sender = request.args.get("email_sender", None, type=str)
         emails_delivers = request.args.getlist("email_deliver")
@@ -97,8 +96,7 @@ def get_graph_data():
         # user_id =
         parameters = {
             "order": order,
-            "skip": skip,
-            "limit": limit
+            "skip": skip
         }
         included_filter = False
         if email_sender:
@@ -150,8 +148,7 @@ def get_graph_data():
         {filter_by_delivers}
         RETURN n, r, m{extra_return_for_delivers}, n3, r3, m3
         ORDER BY n.id {order}
-        SKIP {skip}
-        LIMIT {limit};
+        SKIP {skip};
         """, **parameters)
         records = db.query(cypher_query,
                            sender=email_sender,
