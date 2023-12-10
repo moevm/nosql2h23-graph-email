@@ -1,5 +1,5 @@
 import neo4j
-from flask import Blueprint, jsonify, request, send_file, abort
+from flask import Blueprint, jsonify, request, render_template
 from ..db import get_db, close_db
 from werkzeug.local import LocalProxy
 from ..dtos import PersonDto, EdgeDto, LetterDto
@@ -14,7 +14,7 @@ graph_bp = Blueprint("graph_bp", __name__, url_prefix="/graph")
 
 @graph_bp.route('/', methods=['GET'])
 def get_test():
-    return "Testing"
+    return render_template('index.html')
 
 
 @graph_bp.route('/get_letter_data', methods=['GET'])

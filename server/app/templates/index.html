@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Graph with Nodes and Relationships</title>
+  <style>
+    /* Add some basic styling */
+    body, html {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    svg {
+      display: block;
+      margin: auto;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Include D3.js library -->
+<script src="https://d3js.org/d3.v5.min.js"></script>
+
+<!-- Create an SVG container for the graph -->
+<svg width="100%" height="100%"></svg>
+
+<script>
+  // Sample data for nodes and relationships
+  const nodes = [
+    { id: 1, label: 'Node 1' },
+    { id: 2, label: 'Node 2' },
+    { id: 3, label: 'Node 3' },
+    { id: 4, label: 'Node 4' }
+  ];
+
+  const links = [
+    { source: 1, target: 2 },
+    { source: 1, target: 3 },
+    { source: 2, target: 4 }
+  ];
+
+  // Create a D3 force simulation
+  const simulation = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d => d.id))
+    .force('charge', d3.forceManyBody().strength(-200)) // Increase the strength to push nodes farther apart
+    .force('center', d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2));
+
+  // Create SVG elements for links and nodes
+  const svg = d3.select('svg');
+
+  // Create links
+  const link = svg.selectAll('line')
+    .data(links)
+    .enter().append('line')
+    .attr('stroke', '#999')
+    .attr('stroke-width', '2');
+
+  // Create nodes
+  const node = svg.selectAll('circle')
+    .data(nodes)
+    .enter().append('circle')
+    .attr('r', 20)
+    .attr('fill', '#4285f4');
+
+  // Add labels to nodes
+  const label = svg.selectAll(null)
+    .data(nodes)
+    .enter().append('text')
+    .text(d => d.label)
+    .attr('font-size', '12px')
+    .attr('text-anchor', 'middle')
+    .attr('dy', '0.4em');
+
+  // Enable zoom behavior
+  const zoom = d3.zoom()
+    .scaleExtent([0.5, 2]) // Set the minimum and maximum zoom scale
+    .on('zoom', zoomed);
+
+  svg.call(zoom);
+
+  function zoomed() {
+    const transform = d3.event.transform;
+
+    // Update the position and size of elements during zoom
+    link.attr('transform', transform);
+    node.attr('transform', transform);
+    label.attr('transform', transform);
+
+    // Update the centering force dynamically during zoom
+    simulation.force('center', d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2).strength(0.3 / transform.k));
+    simulation.alpha(0.3).restart(); // Restart the simulation to apply changes
+  }
+
+  // Update positions of nodes and links during simulation
+  simulation.on('tick', () => {
+    link
+      .attr('x1', d => d.source.x)
+      .attr('y1', d => d.source.y)
+      .attr('x2', d => d.target.x)
+      .attr('y2', d => d.target.y);
+
+    node
+      .attr('cx', d => d.x)
+      .attr('cy', d => d.y);
+
+    label
+      .attr('x', d => d.x)
+      .attr('y', d => d.y);
+  });
+</script>
+
+</body>
+</html>
