@@ -29,18 +29,9 @@
 
 <script>
   // Sample data for nodes and relationships
-  const nodes = [
-    { id: 1, label: 'Node 1' },
-    { id: 2, label: 'Node 2' },
-    { id: 3, label: 'Node 3' },
-    { id: 4, label: 'Node 4' }
-  ];
+  const nodes = {{ nodes | tojson }};
 
-  const links = [
-    { source: 1, target: 2 },
-    { source: 1, target: 3 },
-    { source: 2, target: 4 }
-  ];
+  const links =  {{ links | tojson }};
 
   // Create a D3 force simulation
   const simulation = d3.forceSimulation(nodes)
@@ -85,24 +76,27 @@
   const node = svg.selectAll('circle')
     .data(nodes)
     .enter().append('circle')
-    .attr('r', d => (d.id === 1 || d.id === 2) ? 30 : 20)
-    .attr('fill', d => {
-        // Set color based on id
-        if (d.id === 1) {
-          return '#79c468';
-        } else if (d.id === 2) {
-          return '#60f23f';
-        } else {
-          return '#1b7008';
-        }
-    })
+    .attr('r', 20)
+    .attr('fill', '#79c468')
     .call(drag);
+
+<!--    d => (d.id === 1 || d.id === 2) ? 30 : 20-->
+<!--    .attr('fill', d => {-->
+<!--        // Set color based on id-->
+<!--        if (d.id === 1) {-->
+<!--          return '#79c468';-->
+<!--        } else if (d.id === 2) {-->
+<!--          return '#60f23f';-->
+<!--        } else {-->
+<!--          return '#1b7008';-->
+<!--        }-->
+<!--    })-->
 
   // Add labels to nodes
   const label = svg.selectAll(null)
     .data(nodes)
     .enter().append('text')
-    .text(d => d.label)
+    .text(d => d.email)
     .attr('font-size', '12px')
     .attr('text-anchor', 'middle')
     .attr('dy', '0.4em');

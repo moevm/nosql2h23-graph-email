@@ -4,6 +4,7 @@ from ..db import get_db, close_db
 from werkzeug.local import LocalProxy
 from ..dtos import PersonDto, EdgeDto, LetterDto
 import json
+import requests
 from ..utilities.BlankFormatter import BlankFormatter
 from ..utilities.utilities import parse_json, records_to_array_dtos, get_graph_nodes_edges, to_Date, custom_serializer, is_it_true
 
@@ -13,8 +14,43 @@ graph_bp = Blueprint("graph_bp", __name__, url_prefix="/graph")
 
 
 @graph_bp.route('/', methods=['GET'])
-def get_test():
-    return render_template('index.html')
+def render_graph():
+    try:
+        api_url = request.url_root + 'api/graph/graph_data?export=False'
+
+        response = requests.get(api_url)
+        if response.status_code == 200:
+            json_data = response.json()
+            # print(json_data)
+            # print(json_data["nodes_person"])
+            # print(json_data["nodes_letter"])
+            # print(json_data["main_person"])
+            # print(json_data["links"])
+            # Sample data for nodes and relationships
+            # nodes = [
+            #     {'id': "4:09664ff0-0b3c-465e-9fc5-3b125318305d:12", 'email': 'Node 1', 'test': 123},
+            #     {'id': "4:09664ff0-0b3c-465e-9fc5-3b125318305d:13", 'email': 'Node 2', 'test': 123},
+            #     {'id': "4:09664ff0-0b3c-465e-9fc5-3b125318305d:14", 'email': 'Node 3', 'test': 123},
+            #     {'id': "4:09664ff0-0b3c-465e-9fc5-3b125318305d:15", 'email': 'Node 4', 'test': 123}
+            # ]
+            #
+            # links = [
+            #     {'source': "4:09664ff0-0b3c-465e-9fc5-3b125318305d:12", 'test': 123, 'target': "4:09664ff0-0b3c-465e-9fc5-3b125318305d:13"},
+            #     {'source': "4:09664ff0-0b3c-465e-9fc5-3b125318305d:12", 'test': 123, 'target': "4:09664ff0-0b3c-465e-9fc5-3b125318305d:14"},
+            #     {'source': "4:09664ff0-0b3c-465e-9fc5-3b125318305d:13", 'test': 123, 'target': "4:09664ff0-0b3c-465e-9fc5-3b125318305d:15"}
+            # ]
+            nodes = json_data["nodes_person"]
+            nodes.append(json_data["main_person"])
+            nodes.extend(json_data["nodes_letter"])
+            links = json_data["links"]
+            print(nodes)
+            print(links)
+            return render_template('index.html', nodes=nodes, links=links)
+        else:
+            # If the request was not successful, return an error message
+            return jsonify({"error": f"Failed to retrieve data from API. Status code: {response.status_code}"}), response.status_code
+    except Exception as e:
+        return jsonify({"error": f"Failed render graph. {str(e)}"}), 500
 
 
 @graph_bp.route('/get_letter_data', methods=['GET'])
@@ -79,8 +115,6 @@ def get_graph_data():
         :return: Graph data with nodes and edges.
     """
     try:
-
-        # sort = request.args.get("sort", "id")
         order = request.args.get("order", "ASC")
         skip = request.args.get("skip", 0, type=int)
 
