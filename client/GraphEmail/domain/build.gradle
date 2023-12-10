@@ -10,15 +10,11 @@ android {
     defaultConfig {
         minSdk 23
         targetSdk 33
-
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        consumerProguardFiles "consumer-rules.pro"
     }
 
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
     compileOptions {
@@ -38,5 +34,4 @@ dependencies {
 
     implementation(project(":features:login:domain"))
     implementation(project(":features:mail_list:domain"))
-    implementation(project(":features:filter:domain"))
 }
