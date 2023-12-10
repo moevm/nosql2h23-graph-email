@@ -33,7 +33,8 @@ class FilterEntryImpl @Inject constructor() : FilterEntry() {
             }
 
         FilterScreen(
-            navigateToMailList = navigateToMailList
+            navigateToMailList = navigateToMailList,
+            popBackStack = { navController.popBackStack() }
         )
     }
 }

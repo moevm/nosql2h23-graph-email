@@ -56,4 +56,5 @@ dependencies {
     api (project(":features:mail_list:router"))
     api (project(":features:mail_list:domain"))
     api (project(":features:filter:router"))
+    api (project(":features:login:router"))
 }

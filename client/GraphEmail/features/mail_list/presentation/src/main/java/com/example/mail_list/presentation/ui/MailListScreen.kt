@@ -2,6 +2,7 @@ package com.example.mail_list.presentation.ui
 
 import android.annotation.SuppressLint
 import android.util.Log
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Scaffold
@@ -32,19 +34,23 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.mail_list.presentation.R
 
+@OptIn(ExperimentalComposeUiApi::class)
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun MailListScreen(
     viewModel: MailListViewModel,
     navigateToFilter: () -> Unit,
+    navigateToLogin: () -> Unit,
     startDate: String?,
     endDate: String?,
     sender: String?,
@@ -52,6 +58,8 @@ fun MailListScreen(
     subject: String?
 ) {
     var searchText by remember { mutableStateOf("") }
+
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     val mailsListCards by viewModel.mailListCards.collectAsState()
 
@@ -97,7 +105,7 @@ fun MailListScreen(
                 actions = {
                     TextButton(
                         onClick = {
-
+                            navigateToLogin()
                         }
                     ) {
                         Text(text = "Logout", color = Color(0xFF5DB075))
@@ -123,7 +131,20 @@ fun MailListScreen(
                     label = { Text("Search by title", color = Color.Gray) },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
-                        imeAction = ImeAction.Search
+                        imeAction = ImeAction.Search,
+
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onSearch = {
+                            viewModel.getMailsWithFilter(
+                                startDate = null,
+                                endDate = null,
+                                sender = null,
+                                receiver = null,
+                                subject = searchText
+                            )
+                            keyboardController?.hide()
+                        }
                     ),
                     singleLine = true,
                     colors = TextFieldDefaults.outlinedTextFieldColors(
@@ -132,7 +153,7 @@ fun MailListScreen(
                         cursorColor = MaterialTheme.colorScheme.primary,
                         backgroundColor = Color(0xFFF6F6F6)
                     ),
-                    shape = MaterialTheme.shapes.extraLarge
+                    shape = MaterialTheme.shapes.extraLarge,
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))

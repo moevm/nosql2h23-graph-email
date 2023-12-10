@@ -46,7 +46,8 @@ fun FilterScreen(
         endDate: String,
         sender: String,
         receiver: String,
-        subject: String) -> Unit
+        subject: String) -> Unit,
+    popBackStack: () -> Unit
 ) {
     var isStartDateClicked by remember { mutableStateOf(false) }
     var isEndDateClicked by remember { mutableStateOf(false) }
@@ -99,7 +100,7 @@ fun FilterScreen(
             )
         }, backgroundColor = Color.White, contentColor = Color.Black, navigationIcon = {
             IconButton(onClick = {
-
+                popBackStack()
             }, modifier = Modifier.padding(start = 0.dp), content = {
                 Icon(
                     imageVector = Icons.Default.ArrowBack, contentDescription = null

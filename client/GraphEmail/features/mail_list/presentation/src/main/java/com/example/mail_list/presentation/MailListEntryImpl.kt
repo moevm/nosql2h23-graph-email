@@ -10,6 +10,7 @@ import com.example.common.router.find
 import com.example.core.dependency.findDependencies
 import com.example.core.dependency.injectedViewModel
 import com.example.filter.router.FilterEntry
+import com.example.login.router.LoginEntry
 import com.example.mail_list.presentation.di.DaggerMailListComponent
 import com.example.mail_list.presentation.ui.MailListScreen
 import com.example.mail_list.router.MailListEntry
@@ -42,6 +43,12 @@ class MailListEntryImpl @Inject constructor() : MailListEntry(){
             navigateToFilter = {
                 val destination = destinations
                     .find<FilterEntry>()
+                    .destination()
+                navController.navigate(destination)
+            },
+            navigateToLogin = {
+                val destination = destinations
+                    .find<LoginEntry>()
                     .destination()
                 navController.navigate(destination)
             },
