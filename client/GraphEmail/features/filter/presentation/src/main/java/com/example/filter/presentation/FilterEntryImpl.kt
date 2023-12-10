@@ -1,19 +1,16 @@
 package com.example.filter.presentation
 
-import android.app.Activity
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import com.example.common.router.Destinations
-import com.example.core.dependency.findDependencies
-import com.example.core.dependency.injectedViewModel
-import com.example.filter.presentation.di.DaggerFilterComponent
+import com.example.common.router.find
 import com.example.filter.presentation.ui.FilterScreen
 import com.example.filter.router.FilterEntry
+import com.example.mail_list.router.MailListEntry
 import javax.inject.Inject
 
-class FilterEntryImpl @Inject constructor() : FilterEntry(){
+class FilterEntryImpl @Inject constructor() : FilterEntry() {
 
     @Composable
     override fun Composable(
@@ -21,15 +18,22 @@ class FilterEntryImpl @Inject constructor() : FilterEntry(){
         destinations: Destinations,
         backStackEntry: NavBackStackEntry
     ) {
-        val context = LocalContext.current
-        val viewModel = injectedViewModel {
-            DaggerFilterComponent.builder()
-                .filterDeps((context as Activity).findDependencies())
-                .build()
-                .filterViewModel
-        }
+        val navigateToMailList =
+            { startDate: String, endDate: String, sender: String, receiver: String, subject: String ->
+                val destination = destinations
+                    .find<MailListEntry>()
+                    .destination(
+                        startDate = startDate,
+                        endDate = endDate,
+                        sender = sender,
+                        receiver = receiver,
+                        subject = subject
+                    )
+                navController.navigate(destination)
+            }
+
         FilterScreen(
-            //viewModel = viewModel,
+            navigateToMailList = navigateToMailList
         )
     }
 }

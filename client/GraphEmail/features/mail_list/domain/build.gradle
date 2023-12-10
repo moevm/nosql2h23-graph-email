@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace 'com.example.login.domain'
+    namespace 'com.example.mail_list.domain'
     compileSdk 33
 
     defaultConfig {

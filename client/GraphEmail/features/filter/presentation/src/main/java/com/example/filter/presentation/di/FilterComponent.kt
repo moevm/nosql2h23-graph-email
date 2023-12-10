@@ -2,8 +2,6 @@ package com.example.filter.presentation.di
 
 import com.example.core.dagger.FeatureScoped
 import com.example.core.dependency.Dependencies
-import com.example.filter.domain.FilterInteractor
-import com.example.filter.presentation.ui.FilterViewModel
 import dagger.Component
 
 @FeatureScoped
@@ -16,9 +14,6 @@ interface FilterComponent {
         fun filterDeps(deps: FilterDeps): Builder
         fun build(): FilterComponent
     }
-    val filterViewModel: FilterViewModel
 }
 
-interface FilterDeps : Dependencies {
-    val filterInteractor: FilterInteractor
-}
+interface FilterDeps : Dependencies

@@ -1,7 +1,6 @@
 package com.example.core.dependency
 
 import android.app.Activity
-import android.util.Log
 import com.example.common.router.Destinations
 import com.example.common.router.FeatureEntry
 
@@ -15,7 +14,6 @@ inline fun <reified D : Dependencies> Activity.findDependencies(): D {
 
 @Suppress("UNCHECKED_CAST")
 fun <D : Dependencies> Activity.findDependenciesByClass(clazz: Class<D>): D {
-    Log.d("PLOP", "Dependencies")
     return depsApplication?.depsMap?.get(clazz) as? D ?: throw IllegalStateException("No Dependencies $clazz in application")
 }
 

@@ -17,28 +17,23 @@ import java.util.Locale
 import javax.inject.Inject
 
 class MailListViewModel @Inject constructor(
-    val interactor: MailListInteractor
-) : ViewModel(){
+    private val interactor: MailListInteractor
+) : ViewModel() {
 
     private val _mailList = MutableStateFlow<MailListEntity?>(null)
-    val mailList = _mailList.asStateFlow()
 
     private val _mailListCards = MutableStateFlow<List<Mail>?>(null)
     val mailListCards = _mailListCards.asStateFlow()
 
-    init {
-        getMails()
-    }
-
-    fun getMails(){
+    fun getMails() {
         viewModelScope.launch(Dispatchers.IO) {
-            when(val response = interactor.getMails()){
+            when (val response = interactor.getMails()) {
                 is Entity.Success -> {
                     Log.d("Mail List", "Success")
                     _mailList.value = response.data
                     _mailListCards.value = createMailList(response.data)
-                    //Log.d("createMailList", "${createMailList(response.data)}")
                 }
+
                 is Entity.Error -> {
                     _mailList.value = null
                     Log.d("Mail List", "response.message ${response.message}")
@@ -47,11 +42,40 @@ class MailListViewModel @Inject constructor(
         }
     }
 
-    fun createMailList(mailListEntity: MailListEntity): List<Mail> {
+    fun getMailsWithFilter(
+        startDate: String?,
+        endDate: String?,
+        sender: String?,
+        receiver: String?,
+        subject: String?
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            when (val response = interactor.getMailsWithFilter(
+                startDate,
+                endDate,
+                sender,
+                receiver,
+                subject
+            )) {
+                is Entity.Success -> {
+                    Log.d("Mail List", "Success")
+                    _mailList.value = response.data
+                    _mailListCards.value = createMailList(response.data)
+                }
+
+                is Entity.Error -> {
+                    _mailList.value = null
+                    Log.d("Mail List", "response.message ${response.message}")
+                }
+            }
+        }
+    }
+
+    private fun createMailList(mailListEntity: MailListEntity): List<Mail> {
         val nodesPersonsMap = mailListEntity.nodesPerson?.associateBy { it.id ?: "" } ?: emptyMap()
         val nodesLettersMap = mailListEntity.nodesLetter?.associateBy { it.id ?: "" } ?: emptyMap()
         val mainPersonMap = mailListEntity.mainPerson?.let { mapOf(it.id to it) } ?: emptyMap()
-        Log.d("POPPO", mailListEntity.toString())
+
         return mailListEntity.links?.flatMap { link ->
             val sourcePerson = nodesPersonsMap[link.source ?: ""]
             val targetPerson = nodesPersonsMap[link.target ?: ""]
