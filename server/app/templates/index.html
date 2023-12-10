@@ -35,7 +35,15 @@
 
   // Create a D3 force simulation
   const simulation = d3.forceSimulation(nodes)
-    .force('link', d3.forceLink(links).id(d => d.id).distance(100))
+    .force('link', d3.forceLink(links).id(d => d.id).distance(d => {
+        // Set color based on id
+        if (d.type == "CHAIN") {
+          return 50;
+        }
+        else {
+          return 200;
+        }
+    }))
     .force('charge', d3.forceManyBody().strength(-300)) // Increase the strength to push nodes farther apart
     .force('center', d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2));
 
@@ -46,7 +54,14 @@
   const link = svg.selectAll('line')
     .data(links)
     .enter().append('line')
-    .attr('stroke', '#999')
+    .attr('stroke', d => {
+    // Set color based on some condition, you can modify this logic as needed
+    if (d.type === "CHAIN") {
+      return '#de651b'; // Change this to the desired color for DELIVER links
+    } else {
+      return '#999'; // Default color for other links
+    }
+  })
     .attr('stroke-width', '2');
 
   const drag = d3.drag()
@@ -76,28 +91,34 @@
   const node = svg.selectAll('circle')
     .data(nodes)
     .enter().append('circle')
-    .attr('r', 20)
-    .attr('fill', '#79c468')
+    .attr('r', d => (d.labels.includes("MAIN")) ? 50 : (d.labels.includes("PERSON") ? 30 : 20))
+    .attr('fill', d => {
+        // Set color based on id
+        if (d.labels.includes("MAIN")) {
+          return '#A1F5C3';
+        } else if (d.labels.includes("PERSON")) {
+          return '#5DB075';
+        } else {
+          return '#A5FF85';
+        }
+    })
     .call(drag);
-
-<!--    d => (d.id === 1 || d.id === 2) ? 30 : 20-->
-<!--    .attr('fill', d => {-->
-<!--        // Set color based on id-->
-<!--        if (d.id === 1) {-->
-<!--          return '#79c468';-->
-<!--        } else if (d.id === 2) {-->
-<!--          return '#60f23f';-->
-<!--        } else {-->
-<!--          return '#1b7008';-->
-<!--        }-->
-<!--    })-->
 
   // Add labels to nodes
   const label = svg.selectAll(null)
     .data(nodes)
     .enter().append('text')
-    .text(d => d.email)
-    .attr('font-size', '12px')
+    .text(d => (d.labels.includes("MAIN")) ? "ME" : (d.labels.includes("PERSON") ? d.name : d.subject))
+    .attr('font-size', d => {
+        // Set color based on id
+        if (d.labels.includes("MAIN")) {
+          return '40px';
+        } else if (d.labels.includes("PERSON")) {
+          return '14px';
+        } else {
+          return '12px';
+        }
+    })
     .attr('text-anchor', 'middle')
     .attr('dy', '0.4em');
 

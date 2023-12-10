@@ -16,35 +16,28 @@ graph_bp = Blueprint("graph_bp", __name__, url_prefix="/graph")
 @graph_bp.route('/', methods=['GET'])
 def render_graph():
     try:
-        api_url = request.url_root + 'api/graph/graph_data?export=False'
+        api_url = request.url_root + 'api/graph/graph_data'
 
-        response = requests.get(api_url)
+        email_sender = request.args.get("email_sender", None, type=str)
+        emails_delivers = request.args.getlist("email_deliver")
+        subject = request.args.get("subject", None, type=str)
+        start_date = request.args.get("start_date", None, type=to_Date)
+        end_date = request.args.get("end_date", None, type=to_Date)
+        params = {
+            "export": "False",
+            "email_sender": email_sender,
+            "email_deliver": emails_delivers,
+            "subject": subject,
+            "start_date": start_date,
+            "end_date": end_date
+        }
+        response = requests.get(api_url, params=params)
         if response.status_code == 200:
             json_data = response.json()
-            # print(json_data)
-            # print(json_data["nodes_person"])
-            # print(json_data["nodes_letter"])
-            # print(json_data["main_person"])
-            # print(json_data["links"])
-            # Sample data for nodes and relationships
-            # nodes = [
-            #     {'id': "4:09664ff0-0b3c-465e-9fc5-3b125318305d:12", 'email': 'Node 1', 'test': 123},
-            #     {'id': "4:09664ff0-0b3c-465e-9fc5-3b125318305d:13", 'email': 'Node 2', 'test': 123},
-            #     {'id': "4:09664ff0-0b3c-465e-9fc5-3b125318305d:14", 'email': 'Node 3', 'test': 123},
-            #     {'id': "4:09664ff0-0b3c-465e-9fc5-3b125318305d:15", 'email': 'Node 4', 'test': 123}
-            # ]
-            #
-            # links = [
-            #     {'source': "4:09664ff0-0b3c-465e-9fc5-3b125318305d:12", 'test': 123, 'target': "4:09664ff0-0b3c-465e-9fc5-3b125318305d:13"},
-            #     {'source': "4:09664ff0-0b3c-465e-9fc5-3b125318305d:12", 'test': 123, 'target': "4:09664ff0-0b3c-465e-9fc5-3b125318305d:14"},
-            #     {'source': "4:09664ff0-0b3c-465e-9fc5-3b125318305d:13", 'test': 123, 'target': "4:09664ff0-0b3c-465e-9fc5-3b125318305d:15"}
-            # ]
             nodes = json_data["nodes_person"]
             nodes.append(json_data["main_person"])
             nodes.extend(json_data["nodes_letter"])
             links = json_data["links"]
-            print(nodes)
-            print(links)
             return render_template('index.html', nodes=nodes, links=links)
         else:
             # If the request was not successful, return an error message
@@ -153,13 +146,14 @@ def get_graph_data():
             parameters["filter_by_end_date"] = filter_by_end_date
             included_filter = True
         if len(emails_delivers) != 0:
-            extra_match_for_delivers = ", (m)-[r2:SEND]-(m2:PERSON)"
-            extra_return_for_delivers = ", r2, m2"
+            # Баг если emails_delivers это главный пользователь
+            # extra_match_for_delivers = ", (m)-[r2:SEND]-(m2:PERSON)"
+            # extra_return_for_delivers = ", r2, m2"
             filter_by_delivers = "WHERE " if not included_filter else "AND "
             filter_by_delivers += """ALL(email in list_of_delivers WHERE email in m.to)
                 AND (ANY(email in list_of_delivers WHERE n.email = email) OR n:MAIN)"""
-            parameters["extra_match_for_delivers"] = extra_match_for_delivers
-            parameters["extra_return_for_delivers"] = extra_return_for_delivers
+            # parameters["extra_match_for_delivers"] = extra_match_for_delivers
+            # parameters["extra_return_for_delivers"] = extra_return_for_delivers
             parameters["filter_by_delivers"] = filter_by_delivers
             included_filter = True
 
@@ -173,17 +167,17 @@ def get_graph_data():
         datetime($date_start) AS date_start,
         datetime($date_end) AS date_end,
         $delivers AS list_of_delivers
-        MATCH (n:PERSON)-[r]-(m:LETTER){extra_match_for_delivers}
-        OPTIONAL MATCH (n3:LETTER)-[r3:CHAIN]-(m3:LETTER)
+        MATCH (n)-[r]-(m)
         {filter_by_sender}
         {filter_by_subject}
         {filter_by_start_date}
         {filter_by_end_date}
         {filter_by_delivers}
-        RETURN n, r, m{extra_return_for_delivers}, n3, r3, m3
+        RETURN n, r, m
         ORDER BY n.id {order}
         SKIP {skip};
         """, **parameters)
+        print(cypher_query)
         records = db.query(cypher_query,
                            sender=email_sender,
                            subject=subject,
