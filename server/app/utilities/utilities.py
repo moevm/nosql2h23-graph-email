@@ -1,6 +1,7 @@
 import neo4j
 import json
 from ..dtos import PersonDto, EdgeDto, LetterDto
+from .BlankFormatter import BlankFormatter
 
 
 def parse_json(json_data):
@@ -29,13 +30,14 @@ def parse_json(json_data):
     id_to_edge = {}
     for entry in json_data:
         for key, value in entry.items():
-            if key.startswith('n') or key.startswith('m'):
-                node = create_node(value)
-                if node._identity not in id_to_node.keys():
-                    id_to_node[node._identity] = node
-            elif key.startswith('r'):
-                relationship = EdgeDto.Edge(value)
-                id_to_edge[relationship.identity] = relationship
+            if value is not None:
+                if key.startswith('n') or key.startswith('m'):
+                    node = create_node(value)
+                    if node._identity not in id_to_node.keys():
+                        id_to_node[node._identity] = node
+                elif key.startswith('r'):
+                    relationship = EdgeDto.Edge(value)
+                    id_to_edge[relationship.identity] = relationship
     return id_to_node, id_to_edge
 
 
@@ -171,4 +173,84 @@ def get_min_chain_id(chain_ids):
             min_path_count = path_count
             min_chain_id = chain_id
     return min_chain_id
+
+
+def get_query_parameters(args):
+    order = args.get("order", "ASC")
+    skip = args.get("skip", 0, type=int)
+
+    email_sender = args.get("email_sender", None, type=str)
+    emails_delivers = args.getlist("email_deliver")
+    subject = args.get("subject", None, type=str)
+    start_date = args.get("start_date", None, type=to_Date)
+    end_date = args.get("end_date", None, type=to_Date)
+
+    parameters = {
+        "order": order,
+        "skip": skip
+    }
+
+    included_filter = False
+    if email_sender:
+        parameters["filter_by_sender"] = "WHERE ((r:SEND OR r:DELIVER) AND m.from = SENDER)"
+        included_filter = True
+    if subject:
+        subject = subject.lower()
+        filter_by_subject = "WHERE " if not included_filter else "AND "
+        filter_by_subject += "(subject = toLower(m.subject) OR subject = toLower(n.subject))"
+        parameters["filter_by_subject"] = filter_by_subject
+        included_filter = True
+    if start_date:
+        filter_by_start_date = "WHERE " if not included_filter else "AND "
+        filter_by_start_date += "(date_start <= r.date)"
+        parameters["filter_by_start_date"] = filter_by_start_date
+        included_filter = True
+    if end_date:
+        filter_by_end_date = "WHERE " if not included_filter else "AND "
+        filter_by_end_date += "(r.date <= date_end)"
+        parameters["filter_by_end_date"] = filter_by_end_date
+        included_filter = True
+    if len(emails_delivers) != 0:
+        extra_match_for_delivers = ", (m)-[r2:SEND]-(m2:PERSON)"
+        extra_return_for_delivers = ", r2, m2"
+        filter_by_delivers = "WHERE " if not included_filter else "AND "
+        filter_by_delivers += """ALL(email in list_of_delivers WHERE email in m.to)
+                    AND (ANY(email in list_of_delivers WHERE n.email = email) OR n:MAIN)"""
+        parameters["extra_match_for_delivers"] = extra_match_for_delivers
+        parameters["extra_return_for_delivers"] = extra_return_for_delivers
+        parameters["filter_by_delivers"] = filter_by_delivers
+        included_filter = True
+        # "email_sender": email_sender,
+        # "subject": subject,
+        # "start_date": start_date,
+        # "end_date": end_date,
+        # "emails_delivers": emails_delivers
+    parameters["email_sender"] = email_sender
+    parameters["subject"] = subject
+    parameters["start_date"] = start_date
+    parameters["end_date"] = end_date
+    parameters["emails_delivers"] = emails_delivers
+    return parameters
+
+
+def construct_cypher_query(parameters):
+    fmt = BlankFormatter()
+    cypher_query = fmt.format("""
+            WITH $sender AS SENDER,
+            $subject AS subject,
+            datetime($date_start) AS date_start,
+            datetime($date_end) AS date_end,
+            $delivers AS list_of_delivers
+            MATCH (n:PERSON)-[r]-(m:LETTER){extra_match_for_delivers}
+            OPTIONAL MATCH (n3:LETTER)-[r3:CHAIN]-(m3:LETTER)
+            {filter_by_sender}
+            {filter_by_subject}
+            {filter_by_start_date}
+            {filter_by_end_date}
+            {filter_by_delivers}
+            RETURN n, r, m{extra_return_for_delivers}, n3, r3, m3
+            ORDER BY n.id {order}
+            SKIP {skip};
+            """, **parameters)
+    return cypher_query
 

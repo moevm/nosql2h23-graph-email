@@ -1,9 +1,10 @@
 import neo4j
-from flask import Blueprint, jsonify, request, send_file, abort
+from flask import Blueprint, jsonify, request, render_template
 from ..db import get_db, close_db
 from werkzeug.local import LocalProxy
 from ..dtos import PersonDto, EdgeDto, LetterDto
 import json
+import requests
 from ..utilities.BlankFormatter import BlankFormatter
 from ..utilities.utilities import parse_json, records_to_array_dtos, get_graph_nodes_edges, to_Date, custom_serializer, is_it_true
 
@@ -13,8 +14,36 @@ graph_bp = Blueprint("graph_bp", __name__, url_prefix="/graph")
 
 
 @graph_bp.route('/', methods=['GET'])
-def get_test():
-    return "Testing"
+def render_graph():
+    try:
+        api_url = request.url_root + 'api/graph/graph_data'
+
+        email_sender = request.args.get("email_sender", None, type=str)
+        emails_delivers = request.args.getlist("email_deliver")
+        subject = request.args.get("subject", None, type=str)
+        start_date = request.args.get("start_date", None, type=to_Date)
+        end_date = request.args.get("end_date", None, type=to_Date)
+        params = {
+            "export": "False",
+            "email_sender": email_sender,
+            "email_deliver": emails_delivers,
+            "subject": subject,
+            "start_date": start_date,
+            "end_date": end_date
+        }
+        response = requests.get(api_url, params=params)
+        if response.status_code == 200:
+            json_data = response.json()
+            nodes = json_data["nodes_person"]
+            nodes.append(json_data["main_person"])
+            nodes.extend(json_data["nodes_letter"])
+            links = json_data["links"]
+            return render_template('index.html', nodes=nodes, links=links)
+        else:
+            # If the request was not successful, return an error message
+            return jsonify({"error": f"Failed to retrieve data from API. Status code: {response.status_code}"}), response.status_code
+    except Exception as e:
+        return jsonify({"error": f"Failed render graph. {str(e)}"}), 500
 
 
 @graph_bp.route('/get_letter_data', methods=['GET'])
@@ -79,8 +108,6 @@ def get_graph_data():
         :return: Graph data with nodes and edges.
     """
     try:
-
-        # sort = request.args.get("sort", "id")
         order = request.args.get("order", "ASC")
         skip = request.args.get("skip", 0, type=int)
 
@@ -119,13 +146,14 @@ def get_graph_data():
             parameters["filter_by_end_date"] = filter_by_end_date
             included_filter = True
         if len(emails_delivers) != 0:
-            extra_match_for_delivers = ", (m)-[r2:SEND]-(m2:PERSON)"
-            extra_return_for_delivers = ", r2, m2"
+            # Баг если emails_delivers это главный пользователь
+            # extra_match_for_delivers = ", (m)-[r2:SEND]-(m2:PERSON)"
+            # extra_return_for_delivers = ", r2, m2"
             filter_by_delivers = "WHERE " if not included_filter else "AND "
             filter_by_delivers += """ALL(email in list_of_delivers WHERE email in m.to)
                 AND (ANY(email in list_of_delivers WHERE n.email = email) OR n:MAIN)"""
-            parameters["extra_match_for_delivers"] = extra_match_for_delivers
-            parameters["extra_return_for_delivers"] = extra_return_for_delivers
+            # parameters["extra_match_for_delivers"] = extra_match_for_delivers
+            # parameters["extra_return_for_delivers"] = extra_return_for_delivers
             parameters["filter_by_delivers"] = filter_by_delivers
             included_filter = True
 
@@ -139,17 +167,17 @@ def get_graph_data():
         datetime($date_start) AS date_start,
         datetime($date_end) AS date_end,
         $delivers AS list_of_delivers
-        MATCH (n:PERSON)-[r]-(m:LETTER){extra_match_for_delivers}
-        OPTIONAL MATCH (n3:LETTER)-[r3:CHAIN]-(m3:LETTER)
+        MATCH (n)-[r]-(m)
         {filter_by_sender}
         {filter_by_subject}
         {filter_by_start_date}
         {filter_by_end_date}
         {filter_by_delivers}
-        RETURN n, r, m{extra_return_for_delivers}, n3, r3, m3
+        RETURN n, r, m
         ORDER BY n.id {order}
         SKIP {skip};
         """, **parameters)
+        print(cypher_query)
         records = db.query(cypher_query,
                            sender=email_sender,
                            subject=subject,
