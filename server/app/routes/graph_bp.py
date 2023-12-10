@@ -1,4 +1,3 @@
-import datetime
 import neo4j
 from flask import Blueprint, jsonify, request, send_file, abort
 from ..db import get_db, close_db
@@ -6,119 +5,69 @@ from werkzeug.local import LocalProxy
 from ..dtos import PersonDto, EdgeDto, LetterDto
 import json
 from ..utilities.BlankFormatter import BlankFormatter
+from ..utilities.utilities import parse_json, records_to_array_dtos, get_graph_nodes_edges, to_Date, custom_serializer, is_it_true
 
 db = LocalProxy(get_db)
 
 graph_bp = Blueprint("graph_bp", __name__, url_prefix="/graph")
 
 
-def parse_json(json_data):
-    def create_node(node_entry):
-        node_labels = node_entry['labels']
-        node_properties = node_entry['properties']
-
-        if 'PERSON' in node_labels:
-            node = PersonDto.Person(identity=node_entry['identity'],
-                                    elementId=node_entry['elementId'],
-                                    labels=node_labels,
-                                    properties=node_properties)
-
-        elif 'LETTER' in node_labels:
-            node = LetterDto.Letter(
-                identity=node_entry['identity'],
-                elementId=node_entry['elementId'],
-                labels=node_labels,
-                properties=node_properties
-            )
-        else:
-            node = None
-        return node
-
-    id_to_node = {}
-    id_to_edge = {}
-    for entry in json_data:
-        for key, value in entry.items():
-            if key.startswith('n') or key.startswith('m'):
-                node = create_node(value)
-                if node._identity not in id_to_node.keys():
-                    id_to_node[node._identity] = node
-            elif key.startswith('r'):
-                relationship = EdgeDto.Edge(value)
-                id_to_edge[relationship.identity] = relationship
-    return id_to_node, id_to_edge
-
-
-def records_to_array_dtos(records):
-    data = []
-    for record in records:
-        record_data = {}
-        for key, value in record.items():
-            if isinstance(value, neo4j.graph.Node):
-                properties = dict(value.items())
-                if properties.get('time_on_reply', None):
-                    properties['time_on_reply'] = properties['time_on_reply'].iso_format()
-                record_data[key] = {
-                    "labels": list(value.labels),
-                    "identity": value.id,
-                    "elementId": value.element_id,
-                    "properties": properties
-                }
-            elif isinstance(value, neo4j.graph.Relationship):
-                properties = dict(value.items())
-                record_data[key] = {
-                    "identity": value.id,
-                    "elementId": value.element_id,
-                    "type": value.type,
-                    "start": value.start_node.id,
-                    "end": value.end_node.id,
-                    "startNodeElementId": value.start_node.element_id,
-                    "endNodeElementId": value.end_node.element_id,
-                    "properties": properties
-                }
-            else:
-                record_data[key] = value
-        data.append(record_data)
-    return data
-
-
-def get_graph_nodes_edges(id_to_node,
-                          id_to_edge,
-                          include_letters=True,
-                          include_persons=True,
-                          include_rels=True):
-    graph_data = {'nodes_person': [], 'nodes_letter': [], 'links': []}
-    for node in id_to_node.values():
-        node_dict = node.to_dict()
-        if 'PERSON' in node_dict['labels'] and 'MAIN' not in node_dict['labels'] and include_persons:
-            graph_data['nodes_person'].append(node_dict)
-        elif 'LETTER' in node_dict['labels'] and include_letters:
-            graph_data['nodes_letter'].append(node_dict)
-        elif 'MAIN' in node_dict['labels'] and include_persons:
-            graph_data['main_person'] = node_dict
-    if include_rels:
-        for relationship_obj in id_to_edge.values():
-            graph_data['links'].append(relationship_obj.to_dict())
-
-    graph_data_json = json.dumps(graph_data, default=custom_serializer)
-    return graph_data_json
-
-
-def is_it_true(value):
-    return value.lower() == 'true'
-
-
-def to_Date(time_str):
-    return neo4j.time.DateTime.from_iso_format(time_str)
-
-
-def custom_serializer(obj):
-    if isinstance(obj, neo4j.time.DateTime):
-        return str(obj)
-
-
 @graph_bp.route('/', methods=['GET'])
 def get_test():
     return "Testing"
+
+
+@graph_bp.route('/get_letter_data', methods=['GET'])
+def get_letter_data():
+    try:
+        letter_element_id = request.args.get("letter_element_id", None, type=str)
+        letter_element_id = int(letter_element_id.split(":")[-1])
+        cypher_query = """
+        WITH $letter_id AS letter_id
+        MATCH (n:LETTER)
+        WHERE ID(n) = letter_id
+        RETURN n
+        """
+        records = db.query(cypher_query,
+                           letter_id=letter_element_id)
+        data = records_to_array_dtos(records)
+        id_to_node, id_to_edge = parse_json(data)
+        graph_data_json = get_graph_nodes_edges(id_to_node,
+                                                id_to_edge,
+                                                True,
+                                                False,
+                                                False)
+        graph_data_dict = json.loads(graph_data_json)
+        return graph_data_dict["nodes_letter"][0]
+    except Exception as e:
+        return jsonify({"error": f"Failed get letter data. {str(e)}"}), 500
+
+
+@graph_bp.route('/get_person_data', methods=['GET'])
+def get_person_data():
+    try:
+        email_person = request.args.get("email_person", None, type=str)
+        cypher_query = """
+        WITH $email_person AS email_person
+        MATCH (n:PERSON)
+        WHERE n.email = email_person
+        RETURN n
+        """
+        records = db.query(cypher_query,
+                           email_person=email_person)
+        data = records_to_array_dtos(records)
+        id_to_node, id_to_edge = parse_json(data)
+        graph_data_json = get_graph_nodes_edges(id_to_node,
+                                                id_to_edge,
+                                                False,
+                                                True,
+                                                False)
+        graph_data_dict = json.loads(graph_data_json)
+        if "main_person" not in graph_data_dict:
+            return graph_data_dict["nodes_person"][0]
+        return graph_data_dict["main_person"]
+    except Exception as e:
+        return jsonify({"error": f"Failed get letter data. {str(e)}"}), 500
 
 
 @graph_bp.route('/graph_data', methods=['GET'])
@@ -134,7 +83,6 @@ def get_graph_data():
         # sort = request.args.get("sort", "id")
         order = request.args.get("order", "ASC")
         skip = request.args.get("skip", 0, type=int)
-        limit = request.args.get("limit", 25, type=int)
 
         email_sender = request.args.get("email_sender", None, type=str)
         emails_delivers = request.args.getlist("email_deliver")
@@ -148,8 +96,7 @@ def get_graph_data():
         # user_id =
         parameters = {
             "order": order,
-            "skip": skip,
-            "limit": limit
+            "skip": skip
         }
         included_filter = False
         if email_sender:
@@ -193,15 +140,15 @@ def get_graph_data():
         datetime($date_end) AS date_end,
         $delivers AS list_of_delivers
         MATCH (n:PERSON)-[r]-(m:LETTER){extra_match_for_delivers}
+        OPTIONAL MATCH (n3:LETTER)-[r3:CHAIN]-(m3:LETTER)
         {filter_by_sender}
         {filter_by_subject}
         {filter_by_start_date}
         {filter_by_end_date}
         {filter_by_delivers}
-        RETURN n, r, m{extra_return_for_delivers}
+        RETURN n, r, m{extra_return_for_delivers}, n3, r3, m3
         ORDER BY n.id {order}
-        SKIP {skip}
-        LIMIT {limit};
+        SKIP {skip};
         """, **parameters)
         records = db.query(cypher_query,
                            sender=email_sender,
