@@ -2,6 +2,8 @@ package com.example.graphemail.dagger.modules
 
 import com.example.common.router.FeatureEntry
 import com.example.core.dagger.FeatureEntryKey
+import com.example.filter.presentation.FilterEntryImpl
+import com.example.filter.router.FilterEntry
 import com.example.login.presentation.LoginEntryImpl
 import com.example.login.router.LoginEntry
 import com.example.mail_list.presentation.MailListEntryImpl
@@ -21,4 +23,9 @@ interface NavigationModule {
     @IntoMap
     @FeatureEntryKey(MailListEntry::class)
     fun mailListEntry(entry: MailListEntryImpl): FeatureEntry
+
+    @Binds
+    @IntoMap
+    @FeatureEntryKey(FilterEntry::class)
+    fun filterEntry(entry: FilterEntryImpl): FeatureEntry
 }

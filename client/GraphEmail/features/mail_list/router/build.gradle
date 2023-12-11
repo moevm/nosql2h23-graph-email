@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace 'com.example.login.router'
+    namespace 'com.example.mail_list.router'
     compileSdk 33
 
     defaultConfig {

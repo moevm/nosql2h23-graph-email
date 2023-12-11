@@ -6,6 +6,7 @@ import dagger.Module
     includes = [
         LoginDepsModule::class,
         MailListDepsModule::class,
+        FilterDepsModule::class,
     ]
 )
 interface FeatureDepsModule

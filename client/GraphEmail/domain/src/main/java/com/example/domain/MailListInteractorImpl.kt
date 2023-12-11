@@ -11,4 +11,16 @@ class MailListInteractorImpl(
     override suspend fun getMails(): Entity<MailListEntity> {
         return mailListRepository.getMails()
     }
+
+    override suspend fun getMailsWithFilter(
+        startDate: String?,
+        endDate: String?,
+        sender: String?,
+        receiver: String?,
+        subject: String?
+    ): Entity<MailListEntity> {
+        return mailListRepository.getMailsWithFilter(
+            startDate, endDate, sender, receiver, subject
+        )
+    }
 }

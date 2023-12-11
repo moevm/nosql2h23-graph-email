@@ -22,6 +22,5 @@ class InteractorsModule {
         mailListRepository: MailListRepository
     ) : MailListInteractor = MailListInteractorImpl(
         mailListRepository
-    );
-
+    )
 }
