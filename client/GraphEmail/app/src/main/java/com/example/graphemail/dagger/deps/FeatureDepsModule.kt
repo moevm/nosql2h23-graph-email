@@ -7,6 +7,7 @@ import dagger.Module
         LoginDepsModule::class,
         MailListDepsModule::class,
         FilterDepsModule::class,
+        GraphDepsModule::class,
     ]
 )
 interface FeatureDepsModule

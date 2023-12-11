@@ -47,6 +47,12 @@ fun FilterScreen(
         sender: String,
         receiver: String,
         subject: String) -> Unit,
+    navigateToGraph: (
+        startDate: String,
+        endDate: String,
+        sender: String,
+        receiver: String,
+        subject: String) -> Unit,
     popBackStack: () -> Unit
 ) {
     var isStartDateClicked by remember { mutableStateOf(false) }
@@ -172,7 +178,7 @@ fun FilterScreen(
         ) {
             Button(
                 onClick = {
-                    navigateToMailList(
+                    navigateToGraph(
                         startDate, endDate, sender, receiver, subject
                     )
                 },

@@ -1,18 +1,20 @@
-package com.example.mail_list.presentation.ui
+package com.example.graph.presentation.ui
 
 import android.annotation.SuppressLint
 import android.util.Log
+import android.view.View
+import android.view.ViewGroup
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -41,41 +43,27 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.example.mail_list.presentation.R
+import androidx.compose.ui.viewinterop.AndroidView
+import com.example.graph.presentation.R
 
 @OptIn(ExperimentalComposeUiApi::class)
-@SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun MailListScreen(
-    viewModel: MailListViewModel,
-    navigateToFilter: () -> Unit,
-    navigateToLogin: () -> Unit,
+fun GraphScreen(
+    viewModel: GraphViewModel,
     startDate: String?,
     endDate: String?,
     sender: String?,
     receiver: String?,
-    subject: String?
+    subject: String?,
+    navigateToLogin: () -> Unit,
+    navigateToFilter: () -> Unit,
 ) {
     var searchText by remember { mutableStateOf("") }
-
+    var isGraphShown by remember { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
-
-    val mailsListCards by viewModel.mailListCards.collectAsState()
-
-    LaunchedEffect(Unit) {
-        if (startDate.isNullOrEmpty() && endDate.isNullOrEmpty() && sender.isNullOrEmpty() && receiver.isNullOrEmpty() && subject.isNullOrEmpty()) {
-            Log.d("PLOP", "getMails")
-            viewModel.getMails()
-        } else {
-            Log.d("PLOP", "$startDate $endDate $sender $receiver $subject")
-            viewModel.getMailsWithFilter(
-                startDate = startDate,
-                endDate = endDate,
-                sender = sender,
-                receiver = receiver,
-                subject = subject
-            )
-        }
+    val url = viewModel.graphEntity.collectAsState()
+    LaunchedEffect(key1 = Unit) {
+        isGraphShown = true
     }
 
     Scaffold(
@@ -83,7 +71,7 @@ fun MailListScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Mail List",
+                        text = "Graph",
                         modifier = Modifier
                             .fillMaxWidth()
                             .wrapContentSize(Alignment.Center),
@@ -116,7 +104,7 @@ fun MailListScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
+                    .padding(0.dp),
                 verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -125,23 +113,15 @@ fun MailListScreen(
                     onValueChange = { searchText = it },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(0.dp)
+                        .padding(horizontal = 16.dp)
                         .height(70.dp),
                     label = { Text("Search by subject", color = Color.Gray) },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
                         imeAction = ImeAction.Search,
-
                     ),
                     keyboardActions = KeyboardActions(
                         onSearch = {
-                            viewModel.getMailsWithFilter(
-                                startDate = null,
-                                endDate = null,
-                                sender = null,
-                                receiver = null,
-                                subject = searchText
-                            )
                             keyboardController?.hide()
                         }
                     ),
@@ -155,18 +135,20 @@ fun MailListScreen(
                     shape = MaterialTheme.shapes.extraLarge,
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                LazyColumn(
-                    userScrollEnabled = true
-                ) {
-                    mailsListCards?.let {
-                        items(it.size) { mail ->
-                            MailCard(it[mail], {})
-                        }
-                    }
+                if (isGraphShown) {
+                    ShowGraph(
+                        url = viewModel.buildGraphUrl(
+                            "http://192.168.1.216:5000/api/graph?",
+                            startDate = startDate,
+                            endDate = endDate,
+                            sender = sender,
+                            receiver = receiver,
+                            subject = searchText.ifEmpty { subject }
+                        )
+                    )
                 }
             }
+
             Box(modifier = Modifier.fillMaxSize()) {
                 FloatingActionButton(
                     onClick = { navigateToFilter() },
@@ -189,18 +171,28 @@ fun MailListScreen(
             }
         }
     )
-    /*
-    AndroidView(factory = {
-        WebView(it).apply {
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
-            webViewClient = WebViewClient()
-            loadUrl("http://192.168.1.216:5000/api/graph/")
-            settings.javaScriptEnabled = true
-        }
-    }, update = {
-        it.loadUrl("http://192.168.1.216:5000/api/graph/")
-    })*/
+}
+
+@SuppressLint("SetJavaScriptEnabled")
+@Composable
+fun ShowGraph(
+    url: String,
+) {
+    Log.d("PLOP", "URL = $url")
+    AndroidView(
+        modifier = Modifier.fillMaxWidth(),
+        factory = {
+            WebView(it).apply {
+                setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+                webViewClient = WebViewClient()
+                settings.javaScriptEnabled = true
+                loadUrl(url)
+            }
+        }, update = {
+            it.loadUrl(url)
+        })
 }

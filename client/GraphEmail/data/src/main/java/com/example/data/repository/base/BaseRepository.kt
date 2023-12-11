@@ -1,7 +1,5 @@
 package com.example.data.repository.base
 
-import android.util.Log
-import com.example.backend.api.utils.dto.ServerResponse
 import com.example.backend.api.utils.exception.AuthException
 import com.example.backend.api.utils.exception.ErrorCode
 import com.example.backend.api.utils.exception.NetworkException
@@ -12,7 +10,6 @@ import com.example.data.repository.base.ResponseCodes.SERVER_ERROR_CODE
 import com.example.data.repository.base.ResponseCodes.SUCCESS_CODES
 import retrofit2.HttpException
 import com.example.backend.api.models.ResponseStatus
-import com.example.backend.api.utils.exception.NetworkError
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
@@ -23,53 +20,6 @@ import java.net.UnknownHostException
 open class BaseRepository(
     private val repository: String = TAG,
 ) {
-
-    /*protected suspend fun <K : Any> safeApiSuspendResultNoResponse(call: suspend () -> Response<K>?): ResponseStatus<K> {
-        val response: Response<K>?
-        try {
-            response = call.invoke()
-            if (response != null && response.isSuccessful) {
-                return ResponseStatus.Success(response.body(), response.code())
-            }
-            val errorBody: Error? = response?.errorBody()?.parseError()
-            return ResponseStatus.Error(
-                NetworkException(
-                    errorBody?.message,
-                    Throwable(repository)
-                )
-            )
-        } catch (e: Exception) {
-            Log.e("BaseRepository: ", e.message.toString())
-            when (e) {
-                is UnknownHostException -> return ResponseStatus.Error(
-                    NoNetworkException(
-                        e.message,
-                        Throwable(repository)
-                    )
-                )
-                is JsonSyntaxException -> {
-                    Log.e("BaseRepository: ", e.message.toString())
-                    return ResponseStatus.Error(
-                        NetworkException(
-                            e.message,
-                            Throwable(repository)
-                        )
-                    )
-                }
-                is HttpException -> return ResponseStatus.Error(
-                    NoNetworkException(
-                        e.message,
-                        Throwable(repository)
-                    )
-                )
-                else -> return ResponseStatus.Error(
-                    NetworkException(
-                    e.message,
-                    Throwable(repository)
-                ))
-            }
-        }
-    }*/
 
     protected suspend fun <K : Any> safeApiSuspendResult(call: suspend () -> Response<K>?): ResponseStatus<K> {
         val response: Response<K>?

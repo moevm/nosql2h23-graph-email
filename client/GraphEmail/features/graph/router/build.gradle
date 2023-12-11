@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace 'com.example.domain'
+    namespace 'com.example.graph.router'
     compileSdk 33
 
     defaultConfig {
@@ -27,12 +27,7 @@ android {
 }
 
 dependencies {
-    implementation "androidx.core:core-ktx:1.8.0"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.5.1"
+    implementation 'androidx.navigation:navigation-common-ktx:2.5.3'
 
-    implementation(project(":common:domain"))
-
-    implementation(project(":features:login:domain"))
-    implementation(project(":features:mail_list:domain"))
-    implementation(project(":features:graph:domain"))
+    implementation(project(":common:router"))
 }

@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace 'com.example.filter.presentation'
+    namespace 'com.example.graph.presentation'
     compileSdk 33
 
     defaultConfig {
@@ -53,7 +53,9 @@ dependencies {
     implementation (project(":core:dependency"))
     implementation(project(":common:router"))
 
-    api (project(":features:filter:router"))
+    api (project(":features:login:router"))
     api (project(":features:mail_list:router"))
+    api (project(":features:filter:router"))
     api (project(":features:graph:router"))
+    api (project(":features:graph:domain"))
 }

@@ -60,6 +60,7 @@ dependencies {
     implementation(project(":features:login:presentation"))
     implementation(project(":features:mail_list:presentation"))
     implementation(project(":features:filter:presentation"))
+    implementation(project(":features:graph:presentation"))
 
     implementation "androidx.core:core-ktx:1.8.0"
     implementation platform('org.jetbrains.kotlin:kotlin-bom:1.8.0')

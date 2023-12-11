@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel,
-    navigateToMailList: () -> Unit,
+    navigateToGraph: () -> Unit,
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -140,7 +140,7 @@ fun LoginScreen(
                 Button(
                     onClick = {
                         viewModel.login(email, password)
-                        navigateToMailList()
+                        navigateToGraph()
                               },
                     modifier = Modifier
                         .fillMaxWidth()
