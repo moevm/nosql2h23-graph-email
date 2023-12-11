@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace 'com.example.mail_list.presentation'
+    namespace 'com.example.filter.presentation'
     compileSdk 33
 
     defaultConfig {
@@ -53,8 +53,6 @@ dependencies {
     implementation (project(":core:dependency"))
     implementation(project(":common:router"))
 
-    api (project(":features:mail_list:router"))
-    api (project(":features:mail_list:domain"))
     api (project(":features:filter:router"))
-    api (project(":features:login:router"))
+    api (project(":features:mail_list:router"))
 }

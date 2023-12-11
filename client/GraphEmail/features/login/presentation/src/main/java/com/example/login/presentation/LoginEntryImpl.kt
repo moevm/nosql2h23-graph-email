@@ -16,7 +16,7 @@ import com.example.login.router.LoginEntry
 import com.example.mail_list.router.MailListEntry
 import javax.inject.Inject
 
-class LoginEntryImpl @Inject constructor() : LoginEntry(){
+class LoginEntryImpl @Inject constructor() : LoginEntry() {
 
     @Composable
     override fun Composable(
@@ -36,7 +36,7 @@ class LoginEntryImpl @Inject constructor() : LoginEntry(){
             navigateToMailList = {
                 val destination = destinations
                     .find<MailListEntry>()
-                    .destination()
+                    .destination( "","","","","" )
                 navController.navigateAndClean(destination)
             }
         )

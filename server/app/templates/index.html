@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Graph with Nodes and Relationships</title>
+  <style>
+    /* Add some basic styling */
+    body, html {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    svg {
+      display: block;
+      margin: auto;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Include D3.js library -->
+<script src="https://d3js.org/d3.v5.min.js"></script>
+
+<!-- Create an SVG container for the graph -->
+<svg width="100%" height="100%"></svg>
+
+<script>
+  // Sample data for nodes and relationships
+  const nodes = {{ nodes | tojson }};
+
+  const links =  {{ links | tojson }};
+
+  // Create a D3 force simulation
+  const simulation = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d => d.id).distance(d => {
+        // Set color based on id
+        if (d.type == "CHAIN") {
+          return 50;
+        }
+        else {
+          return 200;
+        }
+    }))
+    .force('charge', d3.forceManyBody().strength(-300)) // Increase the strength to push nodes farther apart
+    .force('center', d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2));
+
+  // Create SVG elements for links and nodes
+  const svg = d3.select('svg');
+
+  // Create links
+  const link = svg.selectAll('line')
+    .data(links)
+    .enter().append('line')
+    .attr('stroke', d => {
+    // Set color based on some condition, you can modify this logic as needed
+    if (d.type === "CHAIN") {
+      return '#de651b'; // Change this to the desired color for DELIVER links
+    } else {
+      return '#999'; // Default color for other links
+    }
+  })
+    .attr('stroke-width', '2');
+
+  const drag = d3.drag()
+  .on('start', dragstarted)
+  .on('drag', dragged)
+  .on('end', dragended);
+
+  // Define drag start, drag, and drag end functions
+  function dragstarted(d) {
+    if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+  }
+
+  function dragged(d) {
+    d.fx = d3.event.x;
+    d.fy = d3.event.y;
+  }
+
+  function dragended(d) {
+    if (!d3.event.active) simulation.alphaTarget(0);
+    d.fx = null;
+    d.fy = null;
+  }
+
+  // Create nodes
+  const node = svg.selectAll('circle')
+    .data(nodes)
+    .enter().append('circle')
+    .attr('r', d => (d.labels.includes("MAIN")) ? 50 : (d.labels.includes("PERSON") ? 30 : 20))
+    .attr('fill', d => {
+        // Set color based on id
+        if (d.labels.includes("MAIN")) {
+          return '#A1F5C3';
+        } else if (d.labels.includes("PERSON")) {
+          return '#5DB075';
+        } else {
+          return '#A5FF85';
+        }
+    })
+    .call(drag);
+
+  // Add labels to nodes
+  const label = svg.selectAll(null)
+    .data(nodes)
+    .enter().append('text')
+    .text(d => (d.labels.includes("MAIN")) ? "ME" : (d.labels.includes("PERSON") ? d.name : d.subject))
+    .attr('font-size', d => {
+        // Set color based on id
+        if (d.labels.includes("MAIN")) {
+          return '40px';
+        } else if (d.labels.includes("PERSON")) {
+          return '14px';
+        } else {
+          return '12px';
+        }
+    })
+    .attr('text-anchor', 'middle')
+    .attr('dy', '0.4em');
+
+  // Enable zoom behavior
+  const zoom = d3.zoom()
+    .scaleExtent([0.5, 2]) // Set the minimum and maximum zoom scale
+    .on('zoom', zoomed);
+
+  svg.call(zoom);
+
+  function zoomed() {
+    const transform = d3.event.transform;
+
+    // Update the position and size of elements during zoom
+    link.attr('transform', transform);
+    node.attr('transform', transform);
+    label.attr('transform', transform);
+
+    // Update the centering force dynamically during zoom
+    simulation.force('center', d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2).strength(0.3 / transform.k));
+    simulation.alpha(0.3).restart(); // Restart the simulation to apply changes
+  }
+
+  // Update positions of nodes and links during simulation
+  simulation.on('tick', () => {
+    link
+      .attr('x1', d => d.source.x)
+      .attr('y1', d => d.source.y)
+      .attr('x2', d => d.target.x)
+      .attr('y2', d => d.target.y);
+
+    node
+      .attr('cx', d => d.x)
+      .attr('cy', d => d.y);
+
+    label
+      .attr('x', d => d.x)
+      .attr('y', d => d.y);
+  });
+</script>
+
+</body>
+</html>
