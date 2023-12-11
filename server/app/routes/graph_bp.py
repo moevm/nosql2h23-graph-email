@@ -203,6 +203,12 @@ def get_graph_data():
 @graph_bp.route('/load_json', methods=['POST'])
 def load_json():
     try:
+        # очистка базы данных
+        cypher = """
+        MATCH (n)
+        DETACH DELETE n;
+        """
+        db.query(query=cypher)
         json_data = request.get_json()
         id_to_node, id_to_edge = parse_json(json_data)
         for node in id_to_node.values():
