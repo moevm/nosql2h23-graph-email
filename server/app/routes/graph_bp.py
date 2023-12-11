@@ -34,7 +34,6 @@ def render_graph():
             "color_edges_receiving": color_edges_receiving,
             "color_edges_chain": color_edges_chain
         }
-        print(colors)
 
         email_sender = request.args.get("email_sender", None, type=str)
         emails_delivers = request.args.getlist("email_deliver")
@@ -96,26 +95,46 @@ def get_letter_data():
 @graph_bp.route('/get_person_data', methods=['GET'])
 def get_person_data():
     try:
+
         email_person = request.args.get("email_person", None, type=str)
-        cypher_query = """
-        WITH $email_person AS email_person
-        MATCH (n:PERSON)
-        WHERE n.email = email_person
-        RETURN n
-        """
-        records = db.query(cypher_query,
-                           email_person=email_person)
-        data = records_to_array_dtos(records)
-        id_to_node, id_to_edge = parse_json(data)
-        graph_data_json = get_graph_nodes_edges(id_to_node,
-                                                id_to_edge,
-                                                False,
-                                                True,
-                                                False)
-        graph_data_dict = json.loads(graph_data_json)
-        if "main_person" not in graph_data_dict:
-            return graph_data_dict["nodes_person"][0]
-        return graph_data_dict["main_person"]
+
+        api_url = request.url_root + 'api/graph/graph_data'
+        params = {
+            "export": "False",
+            "email_sender": email_person,
+            "only_letters": "True"
+        }
+        response = requests.get(api_url, params=params)
+        if response.status_code == 200:
+            json_data = response.json()
+            letters = json_data["nodes_letter"]
+            cypher_query = """
+                    WITH $email_person AS email_person
+                    MATCH (n:PERSON)
+                    WHERE n.email = email_person
+                    RETURN n
+                    """
+            records = db.query(cypher_query,
+                               email_person=email_person)
+            data = records_to_array_dtos(records)
+            id_to_node, id_to_edge = parse_json(data)
+            graph_data_json = get_graph_nodes_edges(id_to_node,
+                                                    id_to_edge,
+                                                    False,
+                                                    True,
+                                                    False)
+            graph_data_dict = json.loads(graph_data_json)
+            person_data = {
+                "letters": letters
+            }
+            if "main_person" not in graph_data_dict:
+                person_data["person"] = graph_data_dict["nodes_person"][0]
+                return jsonify(person_data)
+            person_data["person"] = graph_data_dict["main_person"]
+            return jsonify(person_data)
+        else:
+            # If the request was not successful, return an error message
+            return jsonify({"error": f"Failed to retrieve data from API. Status code: {response.status_code}"}), response.status_code
     except Exception as e:
         return jsonify({"error": f"Failed get letter data. {str(e)}"}), 500
 
