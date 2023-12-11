@@ -33,6 +33,15 @@
 
   const links =  {{ links | tojson }};
 
+  const colors = {{ colors | tojson }}
+
+  const color_user_vertex = colors["color_user_vertex"];
+  const color_contact_vertices = colors["color_contact_vertices"];
+  const color_letter_vertices = colors["color_letter_vertices"];
+  const color_edges_sending = colors["color_edges_sending"];
+  const color_edges_receiving = colors["color_edges_receiving"];
+  const color_edges_chain = colors["color_edges_chain"];
+
   // Create a D3 force simulation
   const simulation = d3.forceSimulation(nodes)
     .force('link', d3.forceLink(links).id(d => d.id).distance(d => {
@@ -57,9 +66,11 @@
     .attr('stroke', d => {
     // Set color based on some condition, you can modify this logic as needed
     if (d.type === "CHAIN") {
-      return '#de651b'; // Change this to the desired color for DELIVER links
+      return color_edges_chain; // Change this to the desired color for DELIVER links
+    } else if (d.type === "DELIVER") {
+      return color_edges_receiving;
     } else {
-      return '#999'; // Default color for other links
+      return color_edges_sending;
     }
   })
     .attr('stroke-width', '2');
@@ -95,11 +106,11 @@
     .attr('fill', d => {
         // Set color based on id
         if (d.labels.includes("MAIN")) {
-          return '#A1F5C3';
-        } else if (d.labels.includes("PERSON")) {
-          return '#5DB075';
+          return color_user_vertex;
+        } else if (d.labels.includes("CONTACT")) {
+          return color_contact_vertices;
         } else {
-          return '#A5FF85';
+          return color_letter_vertices;
         }
     })
     .call(drag);

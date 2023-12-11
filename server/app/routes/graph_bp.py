@@ -18,6 +18,24 @@ def render_graph():
     try:
         api_url = request.url_root + 'api/graph/graph_data'
 
+        # color_all_edges = request.args.get("color_all_edges,", '#999', type=str)
+        hashtag = '#'
+        color_contact_vertices = hashtag + request.args.get("color_contact_vertices", '5DB075', type=str)
+        color_user_vertex = hashtag + request.args.get("color_user_vertex", 'A1F5C3', type=str)
+        color_letter_vertices = hashtag + request.args.get("color_letter_vertices", 'A5FF85', type=str)
+        color_edges_sending = hashtag + request.args.get("color_edges_sending", '999', type=str)
+        color_edges_receiving = hashtag + request.args.get("color_edges_receiving", '999', type=str)
+        color_edges_chain = hashtag + request.args.get("color_edges_chain", 'de651b', type=str)
+        colors = {
+            "color_contact_vertices": color_contact_vertices,
+            "color_user_vertex": color_user_vertex,
+            "color_letter_vertices": color_letter_vertices,
+            "color_edges_sending": color_edges_sending,
+            "color_edges_receiving": color_edges_receiving,
+            "color_edges_chain": color_edges_chain
+        }
+        print(colors)
+
         email_sender = request.args.get("email_sender", None, type=str)
         emails_delivers = request.args.getlist("email_deliver")
         subject = request.args.get("subject", None, type=str)
@@ -38,7 +56,10 @@ def render_graph():
             nodes.append(json_data["main_person"])
             nodes.extend(json_data["nodes_letter"])
             links = json_data["links"]
-            return render_template('index.html', nodes=nodes, links=links)
+            return render_template('index.html',
+                                   nodes=nodes,
+                                   links=links,
+                                   colors=colors)
         else:
             # If the request was not successful, return an error message
             return jsonify({"error": f"Failed to retrieve data from API. Status code: {response.status_code}"}), response.status_code
@@ -177,7 +198,6 @@ def get_graph_data():
         ORDER BY n.id {order}
         SKIP {skip};
         """, **parameters)
-        print(cypher_query)
         records = db.query(cypher_query,
                            sender=email_sender,
                            subject=subject,
