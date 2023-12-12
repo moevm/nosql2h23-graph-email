@@ -7,9 +7,11 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import com.example.common.router.Destinations
 import com.example.common.router.find
+import com.example.common.router.navigateAndClean
 import com.example.core.dependency.findDependencies
 import com.example.core.dependency.injectedViewModel
 import com.example.filter.router.FilterEntry
+import com.example.graph.router.GraphEntry
 import com.example.login.router.LoginEntry
 import com.example.mail_list.presentation.di.DaggerMailListComponent
 import com.example.mail_list.presentation.ui.MailListScreen
@@ -26,11 +28,11 @@ class MailListEntryImpl @Inject constructor() : MailListEntry(){
     ) {
         val context = LocalContext.current
 
-        val startDate = backStackEntry.arguments?.getString(START_DATE)
-        val endDate = backStackEntry.arguments?.getString(END_DATE)
-        val sender = backStackEntry.arguments?.getString(SENDER)
-        val receiver = backStackEntry.arguments?.getString(RECEIVER)
-        val subject = backStackEntry.arguments?.getString(SUBJECT)
+        val startDateArg = backStackEntry.arguments?.getString(START_DATE)
+        val endDateArg = backStackEntry.arguments?.getString(END_DATE)
+        val senderArg = backStackEntry.arguments?.getString(SENDER)
+        val receiverArg = backStackEntry.arguments?.getString(RECEIVER)
+        val subjectArg = backStackEntry.arguments?.getString(SUBJECT)
 
         val viewModel = injectedViewModel {
             DaggerMailListComponent.builder()
@@ -38,6 +40,21 @@ class MailListEntryImpl @Inject constructor() : MailListEntry(){
                 .build()
                 .mailListViewModel
         }
+
+        val navigateToGraph =
+            { startDate: String, endDate: String, sender: String, receiver: String, subject: String ->
+                val destination = destinations
+                    .find<GraphEntry>()
+                    .destination(
+                        startDate = startDate,
+                        endDate = endDate,
+                        sender = sender,
+                        receiver = receiver,
+                        subject = subject
+                    )
+                navController.navigateAndClean(destination)
+            }
+
         MailListScreen(
             viewModel = viewModel,
             navigateToFilter = {
@@ -52,11 +69,12 @@ class MailListEntryImpl @Inject constructor() : MailListEntry(){
                     .destination()
                 navController.navigate(destination)
             },
-            startDate =  startDate ?: "",
-            endDate = endDate ?: "",
-            sender = sender ?: "",
-            receiver = receiver ?: "",
-            subject = subject ?: ""
+            navigateToGraph = navigateToGraph,
+            startDate =  startDateArg ?: "",
+            endDate = endDateArg ?: "",
+            sender = senderArg ?: "",
+            receiver = receiverArg ?: "",
+            subject = subjectArg ?: ""
         )
     }
 }

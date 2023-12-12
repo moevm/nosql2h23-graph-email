@@ -7,6 +7,7 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import com.example.common.router.Destinations
 import com.example.common.router.find
+import com.example.common.router.navigateAndClean
 import com.example.core.dependency.findDependencies
 import com.example.core.dependency.injectedViewModel
 import com.example.filter.router.FilterEntry
@@ -14,6 +15,7 @@ import com.example.graph.presentation.di.DaggerGraphComponent
 import com.example.graph.presentation.ui.GraphScreen
 import com.example.graph.router.GraphEntry
 import com.example.login.router.LoginEntry
+import com.example.mail_list.router.MailListEntry
 import javax.inject.Inject
 
 class GraphEntryImpl @Inject constructor() : GraphEntry() {
@@ -26,11 +28,11 @@ class GraphEntryImpl @Inject constructor() : GraphEntry() {
     ) {
         val context = LocalContext.current
 
-        val startDate = backStackEntry.arguments?.getString(START_DATE)
-        val endDate = backStackEntry.arguments?.getString(END_DATE)
-        val sender = backStackEntry.arguments?.getString(SENDER)
-        val receiver = backStackEntry.arguments?.getString(RECEIVER)
-        val subject = backStackEntry.arguments?.getString(SUBJECT)
+        val startDateArg = backStackEntry.arguments?.getString(START_DATE)
+        val endDateArg = backStackEntry.arguments?.getString(END_DATE)
+        val senderArg = backStackEntry.arguments?.getString(SENDER)
+        val receiverArg = backStackEntry.arguments?.getString(RECEIVER)
+        val subjectArg = backStackEntry.arguments?.getString(SUBJECT)
 
         val viewModel = injectedViewModel {
             DaggerGraphComponent.builder()
@@ -39,13 +41,27 @@ class GraphEntryImpl @Inject constructor() : GraphEntry() {
                 .graphViewModel
         }
 
+        val navigateToMailList =
+            { startDate: String, endDate: String, sender: String, receiver: String, subject: String ->
+                val destination = destinations
+                    .find<MailListEntry>()
+                    .destination(
+                        startDate = startDate,
+                        endDate = endDate,
+                        sender = sender,
+                        receiver = receiver,
+                        subject = subject
+                    )
+                navController.navigateAndClean(destination)
+            }
+
         GraphScreen(
             viewModel,
-            startDate,
-            endDate,
-            sender,
-            receiver,
-            subject,
+            startDateArg,
+            endDateArg,
+            senderArg,
+            receiverArg,
+            subjectArg,
             navigateToLogin = {
                 val destination = destinations
                     .find<LoginEntry>()
@@ -57,7 +73,8 @@ class GraphEntryImpl @Inject constructor() : GraphEntry() {
                     .find<FilterEntry>()
                     .destination()
                 navController.navigate(destination)
-            }
+            },
+            navigateToMailList = navigateToMailList
         )
     }
 }
