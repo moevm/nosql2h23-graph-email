@@ -23,4 +23,9 @@ class MailListInteractorImpl(
             startDate, endDate, sender, receiver, subject
         )
     }
+
+    override suspend fun export(): Entity<Boolean> {
+        return mailListRepository.export()
+    }
+
 }

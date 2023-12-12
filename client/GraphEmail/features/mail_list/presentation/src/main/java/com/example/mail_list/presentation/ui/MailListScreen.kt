@@ -105,7 +105,7 @@ fun MailListScreen(
                 navigationIcon = {
                     TextButton(
                         onClick = {
-
+                            viewModel.export()
                         }
                     ) {
                         Text(text = "Export", color = Color(0xFF5DB075))
@@ -259,7 +259,7 @@ fun BottomNavigationBar(
         items.forEach { item ->
             BottomNavigationItem(
                 icon = {
-                    androidx.compose.material.Icon(
+                    Icon(
                         imageVector = item.icon,
                         contentDescription = item.screen.title
                     )
@@ -270,7 +270,7 @@ fun BottomNavigationBar(
                 onClick = {
                     navigate(item.screen)
                 },
-                label = { androidx.compose.material.Text(text = item.screen.title) },
+                label = { Text(text = item.screen.title) },
                 modifier = Modifier,
             )
         }

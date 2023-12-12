@@ -71,9 +71,24 @@ class MailListViewModel @Inject constructor(
         }
     }
 
+    fun export() {
+        viewModelScope.launch(Dispatchers.IO) {
+            when (val response = interactor.export()) {
+                is Entity.Success -> {
+
+                }
+                is Entity.Error -> {
+
+                }
+            }
+        }
+    }
+
     private fun createMailList(mailListEntity: MailListEntity): List<Mail> {
-        val nodesPersonsMap = mailListEntity.nodesPerson?.associateBy { it.id ?: "" } ?: emptyMap()
-        val nodesLettersMap = mailListEntity.nodesLetter?.associateBy { it.id ?: "" } ?: emptyMap()
+        val nodesPersonsMap =
+            mailListEntity.nodesPerson?.associateBy { it.id ?: "" } ?: emptyMap()
+        val nodesLettersMap =
+            mailListEntity.nodesLetter?.associateBy { it.id ?: "" } ?: emptyMap()
         val mainPersonMap = mailListEntity.mainPerson?.let { mapOf(it.id to it) } ?: emptyMap()
 
         return mailListEntity.links?.flatMap { link ->
@@ -130,7 +145,8 @@ class MailListViewModel @Inject constructor(
     }
 
     private fun formatDateString(input: String): String? {
-        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS", Locale.getDefault())
+        val inputFormat =
+            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS", Locale.getDefault())
         val outputFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
 
         try {
