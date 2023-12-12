@@ -29,4 +29,9 @@ interface ApiService {
         @Query("limit") limit: Int,
         @QueryMap queryFilters: Map<String, String>
     ) : Response<MailListResponse>
+
+    @GET("api/graph")
+    suspend fun getGraphWithFilter(
+        @QueryMap queryFilters: Map<String, String>
+    ) : Response<Any>
 }

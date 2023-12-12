@@ -34,4 +34,5 @@ dependencies {
 
     implementation(project(":features:login:domain"))
     implementation(project(":features:mail_list:domain"))
+    implementation(project(":features:graph:domain"))
 }
