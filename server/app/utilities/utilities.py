@@ -46,30 +46,31 @@ def records_to_array_dtos(records):
     for record in records:
         record_data = {}
         for key, value in record.items():
-            if isinstance(value, neo4j.graph.Node):
-                properties = dict(value.items())
-                if properties.get('time_on_reply', None):
-                    properties['time_on_reply'] = properties['time_on_reply'].iso_format()
-                record_data[key] = {
-                    "labels": list(value.labels),
-                    "identity": value.id,
-                    "elementId": value.element_id,
-                    "properties": properties
-                }
-            elif isinstance(value, neo4j.graph.Relationship):
-                properties = dict(value.items())
-                record_data[key] = {
-                    "identity": value.id,
-                    "elementId": value.element_id,
-                    "type": value.type,
-                    "start": value.start_node.id,
-                    "end": value.end_node.id,
-                    "startNodeElementId": value.start_node.element_id,
-                    "endNodeElementId": value.end_node.element_id,
-                    "properties": properties
-                }
-            else:
-                record_data[key] = value
+            if value is not None:
+                if isinstance(value, neo4j.graph.Node):
+                    properties = dict(value.items())
+                    if properties.get('time_on_reply', None):
+                        properties['time_on_reply'] = properties['time_on_reply'].iso_format()
+                    record_data[key] = {
+                        "labels": list(value.labels),
+                        "identity": value.id,
+                        "elementId": value.element_id,
+                        "properties": properties
+                    }
+                elif isinstance(value, neo4j.graph.Relationship):
+                    properties = dict(value.items())
+                    record_data[key] = {
+                        "identity": value.id,
+                        "elementId": value.element_id,
+                        "type": value.type,
+                        "start": value.start_node.id,
+                        "end": value.end_node.id,
+                        "startNodeElementId": value.start_node.element_id,
+                        "endNodeElementId": value.end_node.element_id,
+                        "properties": properties
+                    }
+                else:
+                    record_data[key] = value
         data.append(record_data)
     return data
 
