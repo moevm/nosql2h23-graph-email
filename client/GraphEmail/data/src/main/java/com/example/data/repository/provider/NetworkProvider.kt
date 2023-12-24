@@ -38,7 +38,7 @@ class NetworkProvider {
     }
 
     companion object {
-        private const val CONNECT_TIME_OUT: Long = 30
-        private const val READ_TIME_OUT: Long = 15
+        private const val CONNECT_TIME_OUT: Long = 120
+        private const val READ_TIME_OUT: Long = 120
     }
 }

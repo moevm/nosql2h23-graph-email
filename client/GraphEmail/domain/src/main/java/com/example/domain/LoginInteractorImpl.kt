@@ -11,4 +11,8 @@ class LoginInteractorImpl(
     override suspend fun login(value: LoginEntity): Entity<Boolean> {
         return repository.login(value)
     }
+
+    override suspend fun import(): Entity<Boolean> {
+        return repository.import()
+    }
 }
