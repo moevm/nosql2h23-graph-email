@@ -1,11 +1,33 @@
 from flask import g
 from flask import current_app as app
-from neo4j import GraphDatabase
+from neo4j import GraphDatabase, basic_auth
+import time
+import logging
+import sys
+
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class Neo4jConnection:
     def __init__(self, uri, user, password):
-        self.driver = GraphDatabase.driver(uri, auth=(user, password))
+        self.driver = GraphDatabase.driver(uri, auth=basic_auth(user, password))
+        self.wait_for_db()
+
+    def wait_for_db(self, max_retries=10, delay=2):
+        retries = 0
+        while retries < max_retries:
+            try:
+                with self.driver.session() as session:
+                    result = session.run("RETURN 1")
+                    result.single()
+                    print("Connected to Neo4j.")
+                    return
+            except Exception as e:
+                print(f"Error connecting to Neo4j: {e}")
+                retries += 1
+                time.sleep(delay)
+        print("Failed to connect to Neo4j after multiple retries.")
 
     def close(self):
         if self.driver is not None:
@@ -20,7 +42,10 @@ class Neo4jConnection:
             if single:
                 response = session.run(query, **kwargs).single()
             else:
+                logger.info("Before response")
                 response = list(session.run(query, **kwargs))
+                logger.info(response)
+                logger.info("Before response")
         except Exception as e:
             print("Query failed:", e)
         finally:

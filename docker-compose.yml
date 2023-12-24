@@ -1,0 +1,38 @@
+version: '3'
+services:
+  app:
+    env_file:
+      - .env
+    build:
+      context: ./server  # Путь к контексту сборки (где находится Dockerfile)
+      dockerfile: Dockerfile  # Имя Dockerfile
+    ports:
+      - "127.0.0.1:5000:5000"
+    depends_on:
+      - neo4j
+    networks:
+      - my_network
+  neo4j:
+    image: neo4j:5.12.0 #fix
+    ports:
+      - "127.0.0.1:7474:7474"
+      - "127.0.0.1:7687:7687"
+    volumes:
+      - ./db/data:/data
+      - ./db/conf:/conf
+      - ./db/logs:/logs
+      - ./db/plugins:/plugins
+    environment:
+      NEO4J_AUTH: neo4j/admin1234
+    networks:
+      - my_network
+
+networks:
+  my_network:
+#  android:
+#      build:
+#        context: ./client/GraphEmail
+#        dockerfile: Dockerfile
+#      volumes:
+#        - ./client/GraphEmail:/app  # Замените path/to/your/app на путь к вашему Android-приложению
+#      command: /bin/sh -c "./gradlew assembleDebug"
