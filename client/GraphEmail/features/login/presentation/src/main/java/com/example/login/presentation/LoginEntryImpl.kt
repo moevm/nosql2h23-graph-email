@@ -10,10 +10,10 @@ import com.example.common.router.find
 import com.example.common.router.navigateAndClean
 import com.example.core.dependency.findDependencies
 import com.example.core.dependency.injectedViewModel
+import com.example.graph.router.GraphEntry
 import com.example.login.presentation.di.DaggerLoginComponent
 import com.example.login.presentation.ui.LoginScreen
 import com.example.login.router.LoginEntry
-import com.example.mail_list.router.MailListEntry
 import javax.inject.Inject
 
 class LoginEntryImpl @Inject constructor() : LoginEntry() {
@@ -33,9 +33,9 @@ class LoginEntryImpl @Inject constructor() : LoginEntry() {
         }
         LoginScreen(
             viewModel = viewModel,
-            navigateToMailList = {
+            navigateToGraph = {
                 val destination = destinations
-                    .find<MailListEntry>()
+                    .find<GraphEntry>()
                     .destination( "","","","","" )
                 navController.navigateAndClean(destination)
             }

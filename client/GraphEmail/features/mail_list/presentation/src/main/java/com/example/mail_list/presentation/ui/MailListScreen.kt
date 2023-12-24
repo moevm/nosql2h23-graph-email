@@ -2,7 +2,6 @@ package com.example.mail_list.presentation.ui
 
 import android.annotation.SuppressLint
 import android.util.Log
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,14 +16,20 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.BottomNavigation
+import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Scaffold
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.TopAppBar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
+import androidx.compose.material.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -51,12 +56,16 @@ fun MailListScreen(
     viewModel: MailListViewModel,
     navigateToFilter: () -> Unit,
     navigateToLogin: () -> Unit,
+    navigateToGraph: (
+        startDate: String, endDate: String, sender: String, receiver: String, subject: String
+    ) -> Unit,
     startDate: String?,
     endDate: String?,
     sender: String?,
     receiver: String?,
-    subject: String?
-) {
+    subject: String?,
+
+    ) {
     var searchText by remember { mutableStateOf("") }
 
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -128,12 +137,12 @@ fun MailListScreen(
                         .fillMaxWidth()
                         .padding(0.dp)
                         .height(70.dp),
-                    label = { Text("Search by title", color = Color.Gray) },
+                    label = { Text("Search by subject", color = Color.Gray) },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
                         imeAction = ImeAction.Search,
 
-                    ),
+                        ),
                     keyboardActions = KeyboardActions(
                         onSearch = {
                             viewModel.getMailsWithFilter(
@@ -173,7 +182,7 @@ fun MailListScreen(
                     onClick = { navigateToFilter() },
                     modifier = Modifier
                         .align(alignment = Alignment.BottomEnd)
-                        .padding(16.dp)
+                        .padding(horizontal = 16.dp, vertical = 68.dp)
                         .size(47.dp),
                     shape = CircleShape,
                     containerColor = Color(0xFFD9D9D9),
@@ -183,26 +192,87 @@ fun MailListScreen(
                         modifier = Modifier
                             .size(24.dp)
                             .align(alignment = Alignment.Center),
-                        //imageVector = Icons.Rounded.Menu,
                         contentDescription = null,
                         tint = Color.Black
                     )
                 }
             }
+        },
+        bottomBar = {
+            BottomNavigationBar(
+                navigate = { screen ->
+                    when (screen) {
+                        BottomNavScreens.GRAPH -> {
+                            navigateToGraph(
+                                startDate ?: "",
+                                endDate ?: "",
+                                sender ?: "",
+                                receiver ?: "",
+                                searchText.ifEmpty { subject ?: "" }
+                            )
+                        }
+
+                        BottomNavScreens.MAIL_LIST -> {
+                            viewModel.getMailsWithFilter(
+                                startDate ?: "",
+                                endDate ?: "",
+                                sender ?: "",
+                                receiver ?: "",
+                                searchText.ifEmpty { subject ?: "" }
+                            )
+                        }
+
+                        BottomNavScreens.SETTINGS -> {
+
+                        }
+                    }
+                }
+            )
         }
     )
-    /*
-    AndroidView(factory = {
-        WebView(it).apply {
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
+}
+
+@Composable
+fun BottomNavigationBar(
+    navigate: (screen: BottomNavScreens) -> Unit
+) {
+    val items = listOf(
+        BottomNavigationItem(
+            screen = BottomNavScreens.GRAPH,
+            icon = Icons.Default.Share,
+            selected = false
+        ),
+        BottomNavigationItem(
+            screen = BottomNavScreens.MAIL_LIST,
+            icon = Icons.Default.List,
+            selected = true
+        ),
+        BottomNavigationItem(
+            screen = BottomNavScreens.SETTINGS,
+            icon = Icons.Default.Settings,
+            selected = false
+        ),
+    )
+    BottomNavigation(
+        modifier = Modifier, backgroundColor = Color(0xFF5DB075)
+    ) {
+        items.forEach { item ->
+            BottomNavigationItem(
+                icon = {
+                    androidx.compose.material.Icon(
+                        imageVector = item.icon,
+                        contentDescription = item.screen.title
+                    )
+                },
+                selectedContentColor = Color.White,
+                unselectedContentColor = Color.Black,
+                selected = item.selected,
+                onClick = {
+                    navigate(item.screen)
+                },
+                label = { androidx.compose.material.Text(text = item.screen.title) },
+                modifier = Modifier,
             )
-            webViewClient = WebViewClient()
-            loadUrl("http://192.168.1.216:5000/api/graph/")
-            settings.javaScriptEnabled = true
         }
-    }, update = {
-        it.loadUrl("http://192.168.1.216:5000/api/graph/")
-    })*/
+    }
 }
