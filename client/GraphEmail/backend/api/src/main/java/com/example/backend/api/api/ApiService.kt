@@ -2,6 +2,7 @@ package com.example.backend.api.api
 
 import com.example.backend.api.dto.LoginRequest
 import com.example.backend.api.dto.MailListResponse
+import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -30,8 +31,14 @@ interface ApiService {
         @QueryMap queryFilters: Map<String, String>
     ) : Response<MailListResponse>
 
+    //NOT USED
     @GET("api/graph")
     suspend fun getGraphWithFilter(
         @QueryMap queryFilters: Map<String, String>
+    ) : Response<Any>
+
+    @POST("/api/graph/load_json")
+    suspend fun import(
+        @Body body: RequestBody
     ) : Response<Any>
 }
