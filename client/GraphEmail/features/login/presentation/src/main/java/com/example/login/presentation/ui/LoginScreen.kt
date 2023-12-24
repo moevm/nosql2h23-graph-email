@@ -18,6 +18,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +40,14 @@ fun LoginScreen(
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    val inputSuccessful by viewModel.inputSuccessful.collectAsState()
+
+    LaunchedEffect(inputSuccessful){
+        if (inputSuccessful) {
+            navigateToGraph()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -122,7 +132,9 @@ fun LoginScreen(
                     .padding(16.dp)
             ) {
                 Button(
-                    onClick = { /* Handle Import Data */ },
+                    onClick = {
+                        viewModel.import()
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(60.dp)

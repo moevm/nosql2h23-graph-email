@@ -6,4 +6,6 @@ interface LoginInteractor {
     suspend fun login(
         value: LoginEntity
     ) : Entity<Boolean>
+
+    suspend fun import() : Entity<Boolean>
 }
