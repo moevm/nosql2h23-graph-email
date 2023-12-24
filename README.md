@@ -20,4 +20,17 @@
 ## Данные пользователя
 
 login: admin
+
 password: admin
+
+## .env
+
+FLASK_PORT=5000
+
+NEO4J_URI=bolt://neo4j:7687
+
+DEBUG=True
+
+NEO4J_USER=neo4j
+
+NEO4J_PASSWORD=admin1234
