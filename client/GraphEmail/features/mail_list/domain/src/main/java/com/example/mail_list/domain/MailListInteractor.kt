@@ -12,4 +12,6 @@ interface MailListInteractor {
         receiver: String?,
         subject: String?
     ): Entity<MailListEntity>
+
+    suspend fun export() : Entity<Boolean>
 }

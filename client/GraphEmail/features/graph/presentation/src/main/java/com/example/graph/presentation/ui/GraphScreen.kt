@@ -20,22 +20,21 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
+import androidx.compose.material.Icon
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Scaffold
+import androidx.compose.material.Text
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,7 +69,7 @@ fun GraphScreen(
     var searchText by remember { mutableStateOf("") }
     var isGraphShown by remember { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
-    val url = viewModel.graphEntity.collectAsState()
+
     LaunchedEffect(key1 = Unit) {
         isGraphShown = true
     }

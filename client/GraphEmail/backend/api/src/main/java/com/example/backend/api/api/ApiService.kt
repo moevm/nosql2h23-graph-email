@@ -2,6 +2,7 @@ package com.example.backend.api.api
 
 import com.example.backend.api.dto.LoginRequest
 import com.example.backend.api.dto.MailListResponse
+import okhttp3.ResponseBody
 import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.Body
@@ -36,6 +37,11 @@ interface ApiService {
     suspend fun getGraphWithFilter(
         @QueryMap queryFilters: Map<String, String>
     ) : Response<Any>
+
+    @GET("api/graph/graph_data")
+    suspend fun export(
+        @Query("export") export: Boolean,
+    ) : Response<ResponseBody>
 
     @POST("/api/graph/load_json")
     suspend fun import(
