@@ -1,5 +1,23 @@
 version: '3'
 services:
+  neo4j:
+    hostname: neo4j
+    image: neo4j:5.12.0
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - ./db/data:/data
+      - ./db/conf:/conf/neo4j.conf
+      - ./db/logs:/logs
+      - ./db/plugins:/plugins
+    environment:
+      NEO4J_AUTH: neo4j/admin1234
+
+    networks:
+      neo4j-internal:
+        aliases:
+          - neo4j-network
   app:
     env_file:
       - .env
@@ -7,26 +25,16 @@ services:
       context: ./server  # Путь к контексту сборки (где находится Dockerfile)
       dockerfile: Dockerfile  # Имя Dockerfile
     ports:
-      - "127.0.0.1:5000:5000"
+      - "5000:5000"
+#    volumes:
+#      - ./db/conf:/conf/neo4j.conf
     depends_on:
       - neo4j
-    networks:
-      - my_network
-  neo4j:
-    image: neo4j:5.12.0 #fix
-    ports:
-      - "127.0.0.1:7474:7474"
-      - "127.0.0.1:7687:7687"
-    volumes:
-      - ./db/data:/data
-      - ./db/conf:/conf
-      - ./db/logs:/logs
-      - ./db/plugins:/plugins
-    environment:
-      NEO4J_AUTH: neo4j/admin1234
-    networks:
-      - my_network
 
+    networks:
+      neo4j-internal:
+        aliases:
+          - neo4j-network
 networks:
   my_network:
 #  android:

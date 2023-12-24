@@ -154,5 +154,3 @@ cython_debug/
 
 # PyCharm
 .idea/
-
-./db
