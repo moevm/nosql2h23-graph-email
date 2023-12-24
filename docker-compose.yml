@@ -5,11 +5,11 @@ services:
     ports:
       - "127.0.0.1:7474:7474"
       - "127.0.0.1:7687:7687"
-#    volumes:
-#      - ./db/data:/data
-#      - ./db/conf:/conf/neo4j.conf
-#      - ./db/logs:/logs
-#      - ./db/plugins:/plugins
+    volumes:
+      - ./db/data:/data
+      - ./db/conf:/conf/neo4j.conf
+      - ./db/logs:/logs
+      - ./db/plugins:/plugins
     environment:
       NEO4J_AUTH: neo4j/admin1234
 
